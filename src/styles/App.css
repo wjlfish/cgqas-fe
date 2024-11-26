@@ -1,0 +1,81 @@
+body {
+    margin: 0;
+    font-family: var(--font-family);
+    background-color: var(--background-color);
+    color: var(--text-color);
+  }
+  
+  .app {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f0f8ff; /* 淡蓝色背景 */
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .title {
+    margin: 0;
+    font-size: 24px;
+    color: #333;
+  }
+  
+  .repo-button {
+    background-color: #4a90d6; /* 按钮色调 */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+  }
+  
+  .repo-button:hover {
+    background-color: #357ab7; /* 按钮悬浮色调 */
+  }
+  
+  .content {
+    margin-top: 20px;
+    padding: 20px;
+  }
+  
+  h1 {
+    text-align: center;
+    color: var(--primary-color);
+  }
+  
+  .question-list {
+    margin-top: 20px;
+  }
+  
+  .question-item {
+    border-bottom: 1px solid #ddd;
+    padding: 10px 0;
+  }
+  
+  .question-item h3 {
+    margin: 0;
+    color: var(--primary-color);
+  }
+  
+  .search-bar {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .search-bar input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    font-size: 16px;
+  }
