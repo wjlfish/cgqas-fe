@@ -17,7 +17,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #f0f8ff; /* 淡蓝色背景 */
+    background-color: #f0f8ff;
     padding: 20px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   }
@@ -29,7 +29,7 @@ body {
   }
   
   .repo-button {
-    background-color: #4a90d6; /* 按钮色调 */
+    background-color: #4a90d6;
     color: white;
     border: none;
     padding: 10px 20px;
@@ -40,7 +40,7 @@ body {
   }
   
   .repo-button:hover {
-    background-color: #357ab7; /* 按钮悬浮色调 */
+    background-color: #357ab7;
   }
   
   .content {
@@ -78,4 +78,28 @@ body {
     border: 1px solid #ddd;
     border-radius: var(--border-radius);
     font-size: 16px;
+  }
+  .splash-screen-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  
+  .splash-screen-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  }
+  
+  .app-content.blurred {
+    filter: blur(5px);
   }

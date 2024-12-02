@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './styles/App.css';
 import SearchBar from './components/SearchBar';
 import QuestionList from './components/QuestionList';
+import SplashScreen from "./components/SplashScreen";
 
 const App = () => {
     const [questions, setQuestions] = useState([]);
@@ -22,9 +23,17 @@ const App = () => {
     const handleSearch = (q) => {
       fetchQuestions(q);
     };
+
+    const [isSplashVisible, setIsSplashVisible] = useState(true);
+
+    const handleSplashClose = () => {
+      setIsSplashVisible(false);
+    };
   
     return (
+      
       <div className="app">
+        {isSplashVisible && <SplashScreen onClose={handleSplashClose} />}
         <header className="app-header">
         
         <h1>创高题库检索助手</h1>
@@ -39,10 +48,10 @@ const App = () => {
         <SearchBar onSearch={handleSearch} />
         <QuestionList questions={questions} />
         <footer className="app-footer">
-        <p>Copyright © 2024 Kevin Wang</p>
+        <p>Copyright © 2024 初音过去</p>
         <p>仅用于复习学习创高体育App内的学习题目</p>
         <p>本软件在 MIT 许可证下分发</p>
-        <p>Repo <a href="https://github.com/wjlfish/cdqas-fe" target="_blank" rel="noopener noreferrer">wjlfish/cgqas-fe</a></p>
+        <p>Repo <a href="https://github.com/wjlfish/cgqas-fe" target="_blank" rel="noopener noreferrer">wjlfish/cgqas-fe</a></p>
         <p>Developed by <a href="https://github.com/wjlfish" target="_blank" rel="noopener noreferrer">wjlfish</a></p>
       </footer>
       </div>
