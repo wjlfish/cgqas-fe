@@ -174,6 +174,29 @@ input,select{ font:inherit; color:inherit }
   background-size:200% 100%; animation:sh 1.4s linear infinite }
 @keyframes sh{ to{ background-position:-200% 0 } }
 
+/* 人机验证 */
+.captcha-wrap{ padding:52px 0 64px }
+.captcha-box{
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  margin-top:20px; flex-wrap:wrap;
+}
+.captcha-box img{
+  display:block; border:1px solid var(--rule); background:var(--paper-2);
+  user-select:none; -webkit-user-drag:none;
+}
+.captcha-box input{
+  height:38px; width:158px; padding:0 12px; font-size:14px; letter-spacing:.14em;
+  border:1px solid var(--rule); background:var(--paper-2); color:var(--ink);
+  outline:none; text-transform:uppercase; font-family:ui-monospace,Menlo,monospace;
+}
+.captcha-box input:focus{ border-color:var(--seal); background:var(--paper) }
+.captcha-box .go{ height:38px }
+.captcha-hint{ margin:16px 0 0; font-size:11.5px; color:var(--ink-3) }
+.link-btn{
+  color:var(--ink-3); font-size:11.5px; border-bottom:1px solid var(--rule); padding-bottom:1px;
+}
+.link-btn:hover{ color:var(--seal); border-bottom-color:var(--seal) }
+
 /* 练习 */
 .quiz-actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap;
   padding:14px 0 12px; border-bottom:1px solid var(--rule) }

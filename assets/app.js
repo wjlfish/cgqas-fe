@@ -19,6 +19,11 @@
     toastTimer = setTimeout(() => el.classList.remove('is-on'), ms);
   }
 
+  /** 需要人机验证时抛出 */
+  class CaptchaNeeded extends Error {
+    constructor(id) { super('captcha'); this.captchaId = id; }
+  }
+
   /* ── 缓存 ── */
   const cache = {
     get(k, ttl) {
@@ -75,6 +80,12 @@
       }
       const sec = j.retry_after || 60;
       throw new Error(`请求过于频繁，请 ${sec >= 60 ? Math.ceil(sec / 60) + ' 分钟' : sec + ' 秒'}后再试`);
+    }
+    if (r.status === 403) {
+      let j = {};
+      try { j = await r.json(); } catch (e) {}
+      if (j.reason === 'captcha_required' && j.captcha) throw new CaptchaNeeded(j.captcha);
+      throw new Error(j.error || '请求被拒绝');
     }
     if (r.status === 400) {
       let j = {};
@@ -166,6 +177,56 @@
       </li>`;
   }
 
+  let pendingRetry = null;
+
+  function renderCaptcha(id, retry) {
+    pendingRetry = retry || (() => doSearch(0, true));
+    const list = $('#list');
+    const qs = new URLSearchParams({ action: 'captcha', id });
+    list.innerHTML = `
+      <li class="empty captcha-wrap">
+        <span class="big">验</span>
+        <p class="empty-txt">检测到访问频率异常，请完成人机验证后继续</p>
+        <div class="captcha-box">
+          <img src="/api.php?${qs}" alt="验证码" width="132" height="46" id="capImg">
+          <input id="capAnswer" type="text" maxlength="6" placeholder="输入图中字符"
+                 autocomplete="off" spellcheck="false" aria-label="验证码">
+          <button class="go" type="button" id="capSubmit">确认</button>
+        </div>
+        <p class="captcha-hint">通过后 10 分钟内不再验证 ·
+          <button class="link-btn" type="button" id="capRefresh">换一张</button></p>
+      </li>`;
+    $('#meta').textContent = '需要人机验证';
+    $('#pagePos').textContent = '';
+    $('#pager').innerHTML = '';
+    const inp = $('#capAnswer');
+    inp.focus();
+
+    const submit = async () => {
+      const ans = inp.value.trim();
+      if (!ans) { inp.focus(); return; }
+      const btn = $('#capSubmit');
+      btn.disabled = true; btn.textContent = '校验中';
+      try {
+        await api('captcha_verify', { id, answer: ans });
+        toast('验证通过');
+        const fn = pendingRetry; pendingRetry = null;
+        if (fn) fn();
+      } catch (e) {
+        toast(e.message || '验证失败');
+        btn.disabled = false; btn.textContent = '确认';
+        inp.value = ''; inp.focus();
+        if (e.message && e.message.includes('失效')) doSearch(0, true);
+      }
+    };
+    $('#capSubmit').addEventListener('click', submit);
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+    $('#capRefresh').addEventListener('click', () => {
+      $('#capImg').src = `/api.php?action=captcha&id=${encodeURIComponent(id)}&t=${Date.now()}`;
+      inp.value = ''; inp.focus();
+    });
+  }
+
   function scrollToList() {
     // 滚到列表头(含计数行), 让计数与首条同时可见
     const head = document.querySelector('#view-search .list-head');
@@ -224,6 +285,7 @@
       renderPager();
       if (jump) scrollToList();
     } catch (e) {
+      if (e instanceof CaptchaNeeded) { renderCaptcha(e.captchaId, () => doSearch(0, true)); return; }
       list.innerHTML = '';
       meta.textContent = '';
       toast(e.message);
@@ -321,6 +383,7 @@
       bindQuiz();
       updateScore();
     } catch (e) {
+      if (e instanceof CaptchaNeeded) { renderCaptcha(e.captchaId, () => startQuiz()); return; }
       list.innerHTML = '';
       $('#quizHint').textContent = '';
       toast(e.message);

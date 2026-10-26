@@ -86,3 +86,18 @@ CREATE TABLE IF NOT EXISTS serve_budget (
   PRIMARY KEY (ip, day),
   KEY idx_day (day)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE rate_limits ADD COLUMN cleared_until INT UNSIGNED NOT NULL DEFAULT 0;
+CREATE TABLE IF NOT EXISTS captcha (
+  id         CHAR(24) NOT NULL,
+  ip         VARBINARY(16) NOT NULL,
+  code_hash  CHAR(64) NOT NULL,
+  image      MEDIUMBLOB NULL,
+  attempts   TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  expires    INT UNSIGNED NOT NULL,
+  used       TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_ip (ip),
+  KEY idx_exp (expires)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

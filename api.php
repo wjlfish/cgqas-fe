@@ -15,10 +15,12 @@
  *   - 通过 UA 与频率校验
  */
 declare(strict_types=1);
+ini_set('display_errors', '0');
 
 require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/response.php';
 require_once __DIR__ . '/lib/ratelimit.php';
+require_once __DIR__ . '/lib/captcha.php';
 
 $t0     = microtime(true);
 $c      = cfg();
@@ -72,6 +74,13 @@ if (!$allowed) {
     ]);
 }
 
+// ── 3.5 验证码图片 (img 标签无法带自定义头, 故不校验令牌; 仍受同源与限流约束) ──
+if ($action === 'captcha') {
+    $cid = preg_replace('/[^a-f0-9]/', '', (string) ($_GET['id'] ?? ''));
+    log_request('captcha', $_GET, 200, (int) ((microtime(true) - $t0) * 1000));
+    captcha_stream($cid, $ipBin);
+}
+
 // ── 4. 令牌校验 (refresh 例外, 它用旧令牌换新令牌) ──
 if ($action === 'refresh') {
     if (!verify_token()) {
@@ -83,6 +92,13 @@ if ($action === 'refresh') {
 if (!verify_token()) {
     log_request($action, $_GET, 401, 0);
     fail('invalid token', 401);
+}
+
+// ── 4.5 渐进式验证码闸门 ──
+if (!is_admin() && in_array($action, ['search', 'quiz'], true) && captcha_needed($ipBin)) {
+    $cid = captcha_issue($ipBin);
+    log_request($action, $_GET, 403, (int) ((microtime(true) - $t0) * 1000));
+    fail('需要完成人机验证', 403, ['reason' => 'captcha_required', 'captcha' => $cid]);
 }
 
 $pdo = db();
@@ -225,6 +241,18 @@ try {
                 'kw_min' => (int) $c['limit']['kw_min_len'],
                 'items'  => $items,
             ];
+            break;
+        }
+
+        // ─────────── 验证码校验 ───────────
+        case 'captcha_verify': {
+            $cid = preg_replace('/[^a-f0-9]/', '', (string) ($_GET['id'] ?? ''));
+            $ans = (string) ($_GET['answer'] ?? '');
+            $r   = captcha_verify($cid, $ans, $ipBin);
+            if (!$r['ok']) {
+                fail($r['error'], 400, ['reason' => 'captcha_failed']);
+            }
+            $out = ['ok' => true, 'cleared_for' => $r['cleared_for']];
             break;
         }
 
