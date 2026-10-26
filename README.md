@@ -195,6 +195,14 @@ Web 根目录指向本仓库根目录即可。`index.php` 为默认入口，
 3. 在概览页拿到 **身份标（prefix）**
 4. 填入 `lib/config.php` 的 `captcha2.scene_id` / `captcha2.prefix`，并把 `enable` 改为 `true`
 
+> ⚠️ 两个值容易搞反：
+> - **身份标(prefix)** 在「概览」页，用于拼出 `{prefix}.captcha-open.aliyuncs.com`
+> - **场景ID(SceneId)** 在「验证场景」列表的「场景名称/ID」列
+>
+> 填反了会在浏览器里报 `IllegalScene: The scene is invalid`，验证码弹窗不出现。
+> 排查方法：打开控制台看 `{prefix}.captcha-open.aliyuncs.com` 的返回，
+> 若为 `{"Code":"Success",...}` 则两值正确。
+
 > 除验证码外，另有全站每 10 分钟发送总量上限（默认 20 条）作为成本兜底。
 
 ### 需要说明的边界
