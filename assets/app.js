@@ -186,38 +186,52 @@
     paintAuth();
   }
 
+  /** 初始化阿里云验证码 2.0 (页面加载后尽早调用, 保证与验证请求间隔 > 2s) */
+  function initCaptcha2() {
+    if (!window.__CG_CAPTCHA2) return;
+    if (window.__capReady) return;
+    if (typeof window.initAliyunCaptcha !== 'function') return;
+    try {
+      window.initAliyunCaptcha({
+        SceneId: window.__CG_CAPTCHA2.sceneId,
+        mode: 'popup',
+        element: '#captcha-element',
+        button: '#smsBtn',
+        success: function (captchaVerifyParam) {
+          const phone = ($('#loginPhone').value || '').replace(/\D/g, '');
+          if (!/^1[3-9]\d{9}$/.test(phone)) { toast('请输入正确的手机号'); return; }
+          api('sms_send', { phone, captcha: captchaVerifyParam }).then(() => {
+            toast('验证码已发送');
+            const btn = $('#smsBtn');
+            let n = 60; btn.disabled = true; btn.textContent = n + 's';
+            const t = setInterval(() => {
+              n--; btn.textContent = n + 's';
+              if (n <= 0) { clearInterval(t); btn.disabled = false; btn.textContent = '获取验证码'; }
+            }, 1000);
+            $('#loginCode').focus();
+            // 官方要求: 一次验证周期结束后需重新初始化, 否则再次点击不会触发
+            window.__capReady = false;
+            setTimeout(initCaptcha2, 1200);
+          }).catch((e) => toast(e.message));
+        },
+        fail: function () {
+          toast('人机验证未通过，请稍后重试');
+          window.__capReady = false;
+          setTimeout(initCaptcha2, 1200);
+        },
+        getInstance: function (i) { window.__capInstance = i; },
+        slideStyle: { width: 320, height: 40 },
+      });
+      window.__capReady = true;
+    } catch (e) {
+      window.__capReady = false;
+    }
+  }
+
   function openLogin(retry) {
     afterLogin = retry || afterLogin;
     $('#loginModal').hidden = false;
-    // 弹窗出现后再初始化验证码, 保证 element 可见
-    if (window.__CG_CAPTCHA2 && typeof window.initAliyunCaptcha === 'function' && !window.__capReady) {
-      try {
-        window.initAliyunCaptcha({
-          SceneId: window.__CG_CAPTCHA2.sceneId,
-          mode: 'popup',
-          element: '#captcha-element',
-          button: '#smsBtn',
-          success: function (captchaVerifyParam) {
-            const phone = ($('#loginPhone').value || '').replace(/\D/g, '');
-            if (!/^1[3-9]\d{9}$/.test(phone)) { toast('请输入正确的手机号'); return; }
-            api('sms_send', { phone, captcha: captchaVerifyParam }).then(() => {
-              toast('验证码已发送');
-              const btn = $('#smsBtn');
-              let n = 60; btn.disabled = true; btn.textContent = n + 's';
-              const t = setInterval(() => {
-                n--; btn.textContent = n + 's';
-                if (n <= 0) { clearInterval(t); btn.disabled = false; btn.textContent = '获取验证码'; }
-              }, 1000);
-              $('#loginCode').focus();
-            }).catch((e) => toast(e.message));
-          },
-          fail: function () { toast('人机验证未通过，请重试'); },
-          getInstance: function (i) { window.__capInstance = i; },
-          slideStyle: { width: 320, height: 40 },
-        });
-        window.__capReady = true;
-      } catch (e) { /* ignore */ }
-    }
+    initCaptcha2();          // 兜底: 若启动时未初始化成功, 这里再试一次
     $('#loginPhone').focus();
   }
 
@@ -731,6 +745,8 @@
   initScrollLine();
   bindAuth();
   bind();
+  initCaptcha2();          // 尽早初始化验证码(文档要求与验证间隔 > 2s)
+
   loadMe().then(() => {
     loadSubjects();
     showIdle();          // 首屏不检索, 不消耗额度

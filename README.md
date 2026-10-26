@@ -195,6 +195,11 @@ Web 根目录指向本仓库根目录即可。`index.php` 为默认入口，
 3. 在概览页拿到 **身份标（prefix）**
 4. 填入 `lib/config.php` 的 `captcha2.scene_id` / `captcha2.prefix`，并把 `enable` 改为 `true`
 
+> ⚠️ **验证码形态要选「滑块验证」或「一点即过」，不要选「无痕验证」**。
+> 无痕形态首次初始化不渲染图形验证码（官方 FAQ Q9：`CaptchaType` 为 `TRACELESS`），
+> 静默判定失败时直接返回「验证失败，请刷新」，无法降级到人工验证，
+> 不适合「必须通过才发短信」的场景。
+>
 > ⚠️ 两个值容易搞反：
 > - **身份标(prefix)** 在「概览」页，用于拼出 `{prefix}.captcha-open.aliyuncs.com`
 > - **场景ID(SceneId)** 在「验证场景」列表的「场景名称/ID」列
