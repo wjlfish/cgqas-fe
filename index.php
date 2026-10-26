@@ -21,6 +21,10 @@ try {
     // 日志失败不影响页面
 }
 
+$cfgAll = require __DIR__ . '/lib/config.php';
+$cap2   = $cfgAll['captcha2'] ?? [];
+$cap2On = !empty($cap2['enable']) && !empty($cap2['scene_id']);
+
 $t   = issue_token($ip);
 $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 ?>
@@ -35,7 +39,20 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <meta name="description" content="四川大学创高体育理论考试题库检索：按关键词、科目、题型查找题目与标准答案">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23F5F3ED'/><text x='16' y='23' font-size='18' text-anchor='middle' fill='%23B03A2E' font-family='serif'>题</text></svg>">
-<link rel="stylesheet" href="/assets/style.css?v=3">
+<link rel="stylesheet" href="/assets/style.css?v=4">
+<?php if ($cap2On): ?>
+<script>
+  window.AliyunCaptchaConfig = {
+    region: <?= json_encode((string) ($cap2['region'] ?? 'cn')) ?>,
+    prefix: <?= json_encode((string) $cap2['prefix']) ?>
+  };
+  window.__CG_CAPTCHA2 = {
+    sceneId: <?= json_encode((string) $cap2['scene_id']) ?>,
+    prefix: <?= json_encode((string) $cap2['prefix']) ?>
+  };
+</script>
+<script src="https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js"></script>
+<?php endif; ?>
 <script>
   (function(){
     try{
@@ -187,12 +204,13 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
              placeholder="6 位验证码" autocomplete="one-time-code">
       <button class="sms-btn" id="smsBtn" type="button">获取验证码</button>
     </div>
+    <div id="captcha-element"></div>
     <button class="go solid full" id="loginSubmit" type="button">登录 / 注册</button>
     <p class="modal-hint" id="loginHint">每个账号可搜题 150 次</p>
   </div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/assets/app.js?v=3"></script>
+<script src="/assets/app.js?v=4"></script>
 </body>
 </html>

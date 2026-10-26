@@ -21,7 +21,7 @@ function _pe(string $s): string
 }
 
 /** RPC 调用 (POST + HMAC-SHA1) */
-function aliyun_rpc(string $endpoint, string $action, array $params): array
+function aliyun_rpc(string $endpoint, string $action, array $params, string $version = '2017-05-25'): array
 {
     $cfg = aliyun_cfg();
     $ak  = (string) ($cfg['id'] ?? '');
@@ -32,7 +32,7 @@ function aliyun_rpc(string $endpoint, string $action, array $params): array
 
     $base = [
         'Format'           => 'JSON',
-        'Version'          => '2017-05-25',
+        'Version'          => $version,
         'AccessKeyId'      => $ak,
         'SignatureMethod'  => 'HMAC-SHA1',
         'SignatureVersion' => '1.0',

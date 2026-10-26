@@ -50,6 +50,15 @@ return [
         'endpoint' => 'https://dypnsapi.aliyuncs.com/',
     ],
 
+    // 阿里云验证码 2.0 (仅在发送短信前校验)
+    'captcha2' => [
+        'enable'   => false,   // 开通并填入 scene_id + prefix 后改 true
+        'scene_id' => '',      // 控制台「验证场景」列表里的场景ID
+        'prefix'   => '',      // 控制台概览页「身份标」，形如 abcd1234
+        'region'   => 'cn',
+        'endpoint' => 'https://captcha.cn-shanghai.aliyuncs.com/',
+    ],
+
     // 用户与额度
     'auth' => [
         'require'         => false,  // 短信配好后改 true
@@ -62,6 +71,7 @@ return [
         'sms_phone_daily' => 5,
         'sms_ip_hourly'   => 10,
         'sms_ip_daily'    => 30,
+        'sms_global_10min'=> 20,    // 全站每 10 分钟最多发送条数(成本兜底)
     ],
 
     // 渐进式验证码: 正常用户不弹, 仅异常索取时要求验证

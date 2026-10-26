@@ -179,6 +179,12 @@ function sms_rate_check(string $phone): ?string
     if ((int) $st->fetchColumn() >= (int) ($cfg['sms_ip_hourly'] ?? 10)) {
         return '当前网络发送次数过多，请稍后再试';
     }
+    // 全站总量(成本兜底): 防止整体被刷导致账单暴涨
+    $st = $pdo->prepare("SELECT COUNT(*) FROM sms_codes WHERE created_at > (NOW() - INTERVAL 10 MINUTE)");
+    $st->execute();
+    if ((int) $st->fetchColumn() >= (int) ($cfg['sms_global_10min'] ?? 20)) {
+        return '当前发送人数较多，请稍后再试';
+    }
     // 同 IP 每日
     $st = $pdo->prepare("SELECT COUNT(*) FROM sms_codes WHERE ip = ? AND created_at >= CURDATE()");
     $st->execute([$ipBin]);

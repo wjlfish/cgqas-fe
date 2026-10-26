@@ -22,6 +22,7 @@ require_once __DIR__ . '/lib/response.php';
 require_once __DIR__ . '/lib/ratelimit.php';
 require_once __DIR__ . '/lib/sms.php';
 require_once __DIR__ . '/lib/auth.php';
+require_once __DIR__ . '/lib/captcha2.php';
 
 $t0     = microtime(true);
 $c      = cfg();
@@ -282,6 +283,14 @@ try {
 
         // ─────────── 发送验证码 ───────────
         case 'sms_send': {
+            // 人机验证(仅发送短信前校验, 检索不受影响)
+            if (captcha2_enabled()) {
+                $vp = (string) ($_REQUEST['captcha'] ?? '');
+                [$cok, $cmsg] = captcha2_verify($vp);
+                if (!$cok) {
+                    fail($cmsg, 400, ['reason' => 'captcha_failed']);
+                }
+            }
             $phone = preg_replace('/\D/', '', (string) ($_GET['phone'] ?? ''));
             if (!phone_valid($phone)) {
                 fail('请输入正确的 11 位手机号', 400);

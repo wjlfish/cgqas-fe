@@ -224,6 +224,8 @@ input,select{ font:inherit; color:inherit }
 .sms-btn:disabled{ color:var(--ink-3); cursor:not-allowed }
 .go.full{ width:100%; margin-top:6px; height:40px }
 .modal-hint{ margin:12px 0 0; font-size:11px; color:var(--ink-3); text-align:center }
+.captcha-box-slot{ display:flex; justify-content:center; margin:2px 0 8px }
+.captcha-box-slot:empty{ display:none }
 
 /* 练习 */
 .quiz-actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap;

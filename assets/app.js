@@ -189,6 +189,35 @@
   function openLogin(retry) {
     afterLogin = retry || afterLogin;
     $('#loginModal').hidden = false;
+    // 弹窗出现后再初始化验证码, 保证 element 可见
+    if (window.__CG_CAPTCHA2 && typeof window.initAliyunCaptcha === 'function' && !window.__capReady) {
+      try {
+        window.initAliyunCaptcha({
+          SceneId: window.__CG_CAPTCHA2.sceneId,
+          mode: 'popup',
+          element: '#captcha-element',
+          button: '#smsBtn',
+          success: function (captchaVerifyParam) {
+            const phone = ($('#loginPhone').value || '').replace(/\D/g, '');
+            if (!/^1[3-9]\d{9}$/.test(phone)) { toast('请输入正确的手机号'); return; }
+            api('sms_send', { phone, captcha: captchaVerifyParam }).then(() => {
+              toast('验证码已发送');
+              const btn = $('#smsBtn');
+              let n = 60; btn.disabled = true; btn.textContent = n + 's';
+              const t = setInterval(() => {
+                n--; btn.textContent = n + 's';
+                if (n <= 0) { clearInterval(t); btn.disabled = false; btn.textContent = '获取验证码'; }
+              }, 1000);
+              $('#loginCode').focus();
+            }).catch((e) => toast(e.message));
+          },
+          fail: function () { toast('人机验证未通过，请重试'); },
+          getInstance: function (i) { window.__capInstance = i; },
+          slideStyle: { width: 320, height: 40 },
+        });
+        window.__capReady = true;
+      } catch (e) { /* ignore */ }
+    }
     $('#loginPhone').focus();
   }
 
@@ -254,25 +283,43 @@
     });
 
     let tick = null;
+    let captchaReady = false;
+
+    function startCountdown() {
+      const btn = $('#smsBtn');
+      let n = 60;
+      btn.disabled = true;
+      btn.textContent = `${n}s`;
+      tick = setInterval(() => {
+        n--; btn.textContent = n + 's';
+        if (n <= 0) { clearInterval(tick); btn.disabled = false; btn.textContent = '获取验证码'; }
+      }, 1000);
+      $('#loginCode').focus();
+    }
+
+    async function sendSms(phone, captchaParam) {
+      try {
+        const params = { phone };
+        if (captchaParam) params.captcha = captchaParam;
+        await api('sms_send', params);
+        toast('验证码已发送');
+        startCountdown();
+      } catch (e) {
+        toast(e.message);
+        const btn = $('#smsBtn');
+        btn.disabled = false;
+        btn.textContent = '获取验证码';
+      }
+    }
+
+    // 「获取验证码」按钮: 未启用验证码时直接发送; 启用时由 SDK 接管点击
     $('#smsBtn').addEventListener('click', async () => {
+      if (window.__CG_CAPTCHA2) return;   // SDK 绑定在 button 上, 这里不重复处理
       const phone = $('#loginPhone').value.replace(/\D/g, '');
       if (!/^1[3-9]\d{9}$/.test(phone)) { toast('请输入正确的手机号'); return; }
       const btn = $('#smsBtn');
       btn.disabled = true;
-      try {
-        await api('sms_send', { phone });
-        toast('验证码已发送');
-        let n = 60;
-        btn.textContent = `${n}s`;
-        tick = setInterval(() => {
-          n--; btn.textContent = n + 's';
-          if (n <= 0) { clearInterval(tick); btn.disabled = false; btn.textContent = '获取验证码'; }
-        }, 1000);
-        $('#loginCode').focus();
-      } catch (e) {
-        toast(e.message);
-        btn.disabled = false;
-      }
+      await sendSms(phone, null);
     });
 
     const submit = async () => {
