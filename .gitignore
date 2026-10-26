@@ -1,24 +1,16 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# 本地配置(含数据库密码与密钥)
+lib/config.php
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
+# 题库与个人数据
+sql/data.sql
+sql/*.local.sql
+creds.json
+proxies.json
 
-# testing
-/coverage
-
-# production
-/build
-
-# misc
+# 运行产物
+*.log
 .DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-node_modules
+# 旧版 React 构建产物与依赖(已不再使用)
+node_modules/
+/build

@@ -1,0 +1,25 @@
+# 安全与路由
+Options -Indexes
+ServerSignature Off
+
+# 禁止访问敏感目录/文件
+<FilesMatch "\.(sql|jsonl|md|log|ini|bak|sh)$">
+  Require all denied
+</FilesMatch>
+RedirectMatch 404 ^/(lib|sql|\.git|\.env)
+
+# 安全响应头
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "same-origin"
+  Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+  Header always set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# 静态资源缓存
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 7 days"
+  ExpiresByType application/javascript "access plus 7 days"
+</IfModule>
