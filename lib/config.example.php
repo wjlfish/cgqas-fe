@@ -44,15 +44,15 @@ return [
         'id'       => 'YOUR_ALIYUN_AK_ID',
         'secret'   => 'YOUR_ALIYUN_AK_SECRET',
         // dypns_platform: 用控制台赠送的签名+模板(推荐) | dypns_local: 自生成校验 | dev: 不发短信
-        'mode'     => 'dev',
-        'sign'     => '',        // 号码认证控制台赠送的签名, 如「速通互联验证码」
-        'template' => '',        // 赠送的模板 CODE
+        'mode'     => 'dev',   // 调试用 dev; 上线改 dypns_platform
+        'sign'     => '',      // 号码认证控制台赠送的签名名称
+        'template' => '',      // 赠送的模板 CODE
         'endpoint' => 'https://dypnsapi.aliyuncs.com/',
     ],
 
     // 用户与额度
     'auth' => [
-        'require'         => false,    // 短信签名模板配好后再改 true
+        'require'         => false,  // 短信配好后改 true
         'cookie'          => 'cg_sess',
         'session_ttl'     => 604800,   // 登录有效期 7 天
         'quota_default'   => 150,      // 每个用户搜题次数

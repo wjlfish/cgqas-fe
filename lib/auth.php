@@ -188,11 +188,19 @@ function sms_rate_check(string $phone): ?string
     return null;
 }
 
-function sms_save_code(string $phone, string $code): void
+function sms_save_code(string $phone, ?string $code): void
 {
     $cfg = auth_cfg();
-    db()->prepare("DELETE FROM sms_codes WHERE phone = ? AND used = 0")->execute([$phone]);
-    db()->prepare(
+    $pdo = db();
+    if ($code === null) {
+        // 平台托管模式: 本站不掌握验证码, 仅记录一次发送用于频控与审计
+        $pdo->prepare(
+            "INSERT INTO sms_codes (phone, code_hash, used, expires, ip) VALUES (?,?,1,?,?)"
+        )->execute([$phone, '', time(), ip_bin(client_ip())]);
+        return;
+    }
+    $pdo->prepare("DELETE FROM sms_codes WHERE phone = ? AND used = 0")->execute([$phone]);
+    $pdo->prepare(
         "INSERT INTO sms_codes (phone, code_hash, expires, ip) VALUES (?,?,?,?)"
     )->execute([$phone, hash('sha256', $code), time() + (int) ($cfg['sms_ttl'] ?? 300), ip_bin(client_ip())]);
 }

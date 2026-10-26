@@ -194,6 +194,37 @@
 
   function closeLogin() { $('#loginModal').hidden = true; }
 
+  /** 首屏空闲态: 不发起检索, 避免无谓消耗额度 */
+  function showIdle() {
+    const list = $('#list');
+    const hint = currentUser
+      ? '输入关键词开始检索 · 每次检索消耗 1 次机会'
+      : '登录后即可检索题库';
+    list.innerHTML = `
+      <li class="empty">
+        <span class="big">题</span>
+        <p class="empty-txt">${hint}</p>
+        <div class="empty-tags">
+          ${currentUser
+            ? ['排球','篮球','太极拳','奥林匹克','健美操','游泳'].map(k =>
+                `<button class="go" data-suggest="${k}">${k}</button>`).join('')
+            : `<button class="go solid" id="idleLogin" type="button">手机号登录</button>`}
+        </div>
+      </li>`;
+    $('#meta').innerHTML = currentUser
+      ? `剩余 <b>${currentUser.left}</b> 次搜题机会`
+      : '';
+    $('#pagePos').textContent = '';
+    $('#pager').innerHTML = '';
+    $$('#list [data-suggest]').forEach((b) => b.addEventListener('click', () => {
+      $('#q').value = b.dataset.suggest;
+      state.q = b.dataset.suggest;
+      doSearch(0, true);
+    }));
+    const il = $('#idleLogin');
+    if (il) il.addEventListener('click', () => openLogin(() => showIdle()));
+  }
+
   function showQuotaOut(info) {
     const list = $('#list');
     list.innerHTML = `
@@ -258,7 +289,7 @@
         closeLogin();
         toast(j.registered ? '注册成功，欢迎使用' : '登录成功');
         const fn = afterLogin; afterLogin = null;
-        if (fn) fn(); else doSearch(0);
+        if (fn) fn(); else showIdle();
       } catch (e) {
         toast(e.message);
       } finally {
@@ -313,6 +344,11 @@
       const j = await api('search', { q: state.q, subject: state.subject, type: state.type, page });
       state.total = j.total;
       state.pages = j.pages;
+      if (typeof j.left === 'number' && currentUser) {
+        currentUser.left = j.left;
+        currentUser.used = Math.max(0, (currentUser.limit || 150) - j.left);
+        paintAuth();
+      }
 
       if (!j.items.length) {
         const suggestions = ['排球', '篮球', '太极拳', '奥林匹克', '健美操', '游泳'];
@@ -587,7 +623,6 @@
     $$('.view').forEach((v) => v.classList.toggle('is-active', v.id === 'view-' + name));
     if (push && location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
     if (name === 'stats') loadStats();
-    if (name === 'quiz' && !quizItems.length) startQuiz();
   }
 
   /* ── 绑定 ── */
@@ -649,7 +684,10 @@
   initScrollLine();
   bindAuth();
   bind();
-  loadMe().then(() => loadSubjects().then(() => doSearch(0)));
+  loadMe().then(() => {
+    loadSubjects();
+    showIdle();          // 首屏不检索, 不消耗额度
+  });
   (async () => {
     const j = cache.get('stats', 10 * 60 * 1000);
     if (j) {

@@ -241,6 +241,14 @@ try {
             // ④ 扣减配额
             budget_guard($ipBin, count($items), true);
 
+            // ⑤ 用量审计
+            try {
+                db()->prepare(
+                    "INSERT INTO search_logs (user_id, action, query, n_items) VALUES (?,?,?,?)"
+                )->execute([$me['id'] ?? 0, 'search', mb_substr($q, 0, 150), count($items)]);
+            } catch (Throwable $e) {
+            }
+
             $out = [
                 'ok'     => true,
                 'total'  => $total,
@@ -286,9 +294,7 @@ try {
             if (!$r['ok']) {
                 fail($r['error'] ?? '短信发送失败', 502, ['reason' => 'sms_failed']);
             }
-            if (!empty($r['code'])) {
-                sms_save_code($phone, $r['code']);
-            }
+            sms_save_code($phone, $r['code'] ?? null);
             $out = ['ok' => true,
                     'managed' => empty($r['code']),
                     'ttl' => (int) (auth_cfg()['sms_ttl'] ?? 300)];
