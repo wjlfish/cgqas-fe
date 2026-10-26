@@ -20,7 +20,8 @@ ini_set('display_errors', '0');
 require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/response.php';
 require_once __DIR__ . '/lib/ratelimit.php';
-require_once __DIR__ . '/lib/captcha.php';
+require_once __DIR__ . '/lib/sms.php';
+require_once __DIR__ . '/lib/auth.php';
 
 $t0     = microtime(true);
 $c      = cfg();
@@ -74,13 +75,6 @@ if (!$allowed) {
     ]);
 }
 
-// ── 3.5 验证码图片 (img 标签无法带自定义头, 故不校验令牌; 仍受同源与限流约束) ──
-if ($action === 'captcha') {
-    $cid = preg_replace('/[^a-f0-9]/', '', (string) ($_GET['id'] ?? ''));
-    log_request('captcha', $_GET, 200, (int) ((microtime(true) - $t0) * 1000));
-    captcha_stream($cid, $ipBin);
-}
-
 // ── 4. 令牌校验 (refresh 例外, 它用旧令牌换新令牌) ──
 if ($action === 'refresh') {
     if (!verify_token()) {
@@ -94,11 +88,26 @@ if (!verify_token()) {
     fail('invalid token', 401);
 }
 
-// ── 4.5 渐进式验证码闸门 ──
-if (!is_admin() && in_array($action, ['search', 'quiz'], true) && captcha_needed($ipBin)) {
-    $cid = captcha_issue($ipBin);
-    log_request($action, $_GET, 403, (int) ((microtime(true) - $t0) * 1000));
-    fail('需要完成人机验证', 403, ['reason' => 'captcha_required', 'captcha' => $cid]);
+// ── 4.5 登录与额度 ──
+$NEED_LOGIN = ['search', 'quiz'];
+$me = auth_current_user();
+
+$AUTH_REQUIRED = (bool) (auth_cfg()['require'] ?? true);
+
+if (in_array($action, $NEED_LOGIN, true) && $AUTH_REQUIRED) {
+    if (!$me) {
+        log_request($action, $_GET, 401, (int) ((microtime(true) - $t0) * 1000));
+        fail('请先完成手机号验证', 401, ['reason' => 'login_required']);
+    }
+    [$qok, $left, $limit] = auth_consume($me['id'], 1);
+    if (!$qok) {
+        log_request($action, $_GET, 403, (int) ((microtime(true) - $t0) * 1000));
+        fail('搜题次数已用完', 403, [
+            'reason' => 'quota_exhausted', 'used' => $me['used'], 'limit' => $limit, 'left' => 0,
+        ]);
+    }
+    $me['used']  = $me['used'] + 1;
+    $me['limit'] = $limit;
 }
 
 $pdo = db();
@@ -239,20 +248,82 @@ try {
                 'pages'  => $hasKw ? min((int) ceil($total / $lim), (int) $c['limit']['kw_pages_max']) : 0,
                 'mode'   => $hasKw ? 'search' : 'random',
                 'kw_min' => (int) $c['limit']['kw_min_len'],
+                'left'   => max(0, $me['limit'] - $me['used']),
                 'items'  => $items,
             ];
             break;
         }
 
-        // ─────────── 验证码校验 ───────────
-        case 'captcha_verify': {
-            $cid = preg_replace('/[^a-f0-9]/', '', (string) ($_GET['id'] ?? ''));
-            $ans = (string) ($_GET['answer'] ?? '');
-            $r   = captcha_verify($cid, $ans, $ipBin);
-            if (!$r['ok']) {
-                fail($r['error'], 400, ['reason' => 'captcha_failed']);
+        // ─────────── 当前用户 ───────────
+        case 'me': {
+            $out = ['ok' => true, 'user' => $me ? [
+                'phone' => phone_mask($me['phone']),
+                'used'  => $me['used'],
+                'limit' => $me['limit'],
+                'left'  => max(0, $me['limit'] - $me['used']),
+            ] : null];
+            break;
+        }
+
+        // ─────────── 退出 ───────────
+        case 'logout': {
+            auth_logout();
+            $out = ['ok' => true];
+            break;
+        }
+
+        // ─────────── 发送验证码 ───────────
+        case 'sms_send': {
+            $phone = preg_replace('/\D/', '', (string) ($_GET['phone'] ?? ''));
+            if (!phone_valid($phone)) {
+                fail('请输入正确的 11 位手机号', 400);
             }
-            $out = ['ok' => true, 'cleared_for' => $r['cleared_for']];
+            $err = sms_rate_check($phone);
+            if ($err !== null) {
+                fail($err, 429, ['reason' => 'sms_rate']);
+            }
+            $r = sms_send_verify($phone);
+            if (!$r['ok']) {
+                fail($r['error'] ?? '短信发送失败', 502, ['reason' => 'sms_failed']);
+            }
+            if (!empty($r['code'])) {
+                sms_save_code($phone, $r['code']);
+            }
+            $out = ['ok' => true,
+                    'managed' => empty($r['code']),
+                    'ttl' => (int) (auth_cfg()['sms_ttl'] ?? 300)];
+            break;
+        }
+
+        // ─────────── 验证码登录(未注册自动注册) ───────────
+        case 'sms_login': {
+            $phone = preg_replace('/\D/', '', (string) ($_GET['phone'] ?? ''));
+            $code  = preg_replace('/\D/', '', (string) ($_GET['code'] ?? ''));
+            if (!phone_valid($phone)) {
+                fail('请输入正确的 11 位手机号', 400);
+            }
+            if (strlen($code) < 4) {
+                fail('请输入验证码', 400);
+            }
+
+            $mode = (string) (aliyun_cfg()['mode'] ?? 'dev');
+            if ($mode === 'dypns_platform') {
+                [$ok, $msg] = sms_platform_check($phone, $code);
+            } else {
+                [$ok, $msg] = sms_check_code($phone, $code);
+            }
+            if (!$ok) {
+                fail($msg, 400, ['reason' => 'code_invalid']);
+            }
+
+            $u = auth_find_or_create($phone);
+            auth_create_session((int) $u['id']);
+            $out = ['ok' => true, 'registered' => $u['created'], 'user' => [
+                'phone' => phone_mask($phone),
+                'used'  => $u['used'],
+                'limit' => $u['limit'],
+                'left'  => max(0, $u['limit'] - $u['used']),
+            ]];
             break;
         }
 

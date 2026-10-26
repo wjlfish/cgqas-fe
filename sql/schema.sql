@@ -88,16 +88,53 @@ CREATE TABLE IF NOT EXISTS serve_budget (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 ALTER TABLE rate_limits ADD COLUMN cleared_until INT UNSIGNED NOT NULL DEFAULT 0;
-CREATE TABLE IF NOT EXISTS captcha (
-  id         CHAR(24) NOT NULL,
-  ip         VARBINARY(16) NOT NULL,
-  code_hash  CHAR(64) NOT NULL,
-  image      MEDIUMBLOB NULL,
-  attempts   TINYINT UNSIGNED NOT NULL DEFAULT 0,
+
+CREATE TABLE IF NOT EXISTS users (
+  id             INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  phone          VARCHAR(20)  NOT NULL,
+  searches_used  INT UNSIGNED NOT NULL DEFAULT 0,
+  searches_limit INT UNSIGNED NOT NULL DEFAULT 150,
+  status         TINYINT NOT NULL DEFAULT 1,
+  created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_login     DATETIME NULL,
+  last_ip        VARBINARY(16) NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_phone (phone)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS auth_sessions (
+  token_hash CHAR(64) NOT NULL,
+  user_id    INT UNSIGNED NOT NULL,
+  ip         VARBINARY(16) NULL,
   expires    INT UNSIGNED NOT NULL,
-  used       TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (token_hash),
+  KEY idx_user (user_id),
+  KEY idx_exp (expires)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sms_codes (
+  id         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  phone      VARCHAR(20) NOT NULL,
+  code_hash  CHAR(64) NOT NULL,
+  attempts   TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  used       TINYINT NOT NULL DEFAULT 0,
+  expires    INT UNSIGNED NOT NULL,
+  ip         VARBINARY(16) NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  KEY idx_ip (ip),
+  KEY idx_phone (phone),
+  KEY idx_ip_time (ip, created_at),
   KEY idx_exp (expires)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS search_logs (
+  id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id    INT UNSIGNED NOT NULL,
+  action     VARCHAR(16) NOT NULL,
+  query      VARCHAR(160) NOT NULL DEFAULT '',
+  n_items    INT UNSIGNED NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_user (user_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

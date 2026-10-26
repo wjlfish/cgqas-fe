@@ -61,6 +61,12 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
       <button class="nav-link" data-tab="stats">统计</button>
     </nav>
     <span class="pill" id="topCount">—</span>
+    <span class="pill quota" id="quotaPill" hidden>剩余 —</span>
+    <button class="login-btn" id="loginBtn" type="button">手机号登录</button>
+    <span class="user-pill" id="userPill" hidden>
+      <span id="userPhone">—</span>
+      <button class="logout-btn" id="logoutBtn" type="button">退出</button>
+    </span>
     <button class="theme-btn" id="themeBtn" title="切换主题" aria-label="切换主题">
       <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -164,6 +170,27 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
     </p>
   </div>
 </footer>
+
+<div class="modal" id="loginModal" hidden>
+  <div class="modal-mask" data-close="1"></div>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <button class="modal-close" data-close="1" aria-label="关闭">×</button>
+    <h2 id="loginTitle">手机号验证</h2>
+    <p class="modal-sub">未注册的手机号将自动创建账号</p>
+    <div class="modal-field">
+      <span class="pre">+86</span>
+      <input id="loginPhone" type="tel" inputmode="numeric" maxlength="11"
+             placeholder="请输入手机号" autocomplete="tel">
+    </div>
+    <div class="modal-field">
+      <input id="loginCode" type="text" inputmode="numeric" maxlength="6"
+             placeholder="6 位验证码" autocomplete="one-time-code">
+      <button class="sms-btn" id="smsBtn" type="button">获取验证码</button>
+    </div>
+    <button class="go solid full" id="loginSubmit" type="button">登录 / 注册</button>
+    <p class="modal-hint" id="loginHint">每个账号可搜题 150 次</p>
+  </div>
+</div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="/assets/app.js?v=3"></script>

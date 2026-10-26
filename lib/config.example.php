@@ -35,13 +35,38 @@ return [
         // ── 防全库拖取 ──
         'kw_min_len'      => 2,    // 允许翻页所需的最小关键词长度
         'kw_pages_max'    => 10,   // 有关键词时最多可翻页数(每页20 → 200条/查询)
-        'daily_items'     => 1500, // 单 IP 每日累计可返回的记录数
-        'window_items'    => 400,  // 单 IP 5 分钟内可返回的记录数
+        'daily_items'     => 8000, // 单 IP 每日累计可返回的记录数
+        'window_items'    => 1200,  // 单 IP 5 分钟内可返回的记录数
+    ],
+
+    // 阿里云短信
+    'aliyun' => [
+        'id'       => 'YOUR_ALIYUN_AK_ID',
+        'secret'   => 'YOUR_ALIYUN_AK_SECRET',
+        // dypns_platform: 用控制台赠送的签名+模板(推荐) | dypns_local: 自生成校验 | dev: 不发短信
+        'mode'     => 'dev',
+        'sign'     => '',        // 号码认证控制台赠送的签名, 如「速通互联验证码」
+        'template' => '',        // 赠送的模板 CODE
+        'endpoint' => 'https://dypnsapi.aliyuncs.com/',
+    ],
+
+    // 用户与额度
+    'auth' => [
+        'require'         => false,    // 短信签名模板配好后再改 true
+        'cookie'          => 'cg_sess',
+        'session_ttl'     => 604800,   // 登录有效期 7 天
+        'quota_default'   => 150,      // 每个用户搜题次数
+        'sms_ttl'         => 300,      // 验证码 5 分钟
+        'sms_max_attempts'=> 5,
+        'sms_phone_gap'   => 60,       // 同一手机号发送间隔
+        'sms_phone_daily' => 5,
+        'sms_ip_hourly'   => 10,
+        'sms_ip_daily'    => 30,
     ],
 
     // 渐进式验证码: 正常用户不弹, 仅异常索取时要求验证
     'captcha' => [
-        'enable'        => true,
+        'enable'        => false,   // 改用手机号登录后关闭
         'items_5min'    => 120,   // 5 分钟内返回条数超过此值 → 要求验证
         'req_per_min'   => 40,    // 每分钟请求超过此值 → 要求验证
         'clear_seconds' => 600,   // 通过后免验证 10 分钟

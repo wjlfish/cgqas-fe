@@ -19,9 +19,12 @@
     toastTimer = setTimeout(() => el.classList.remove('is-on'), ms);
   }
 
-  /** 需要人机验证时抛出 */
-  class CaptchaNeeded extends Error {
-    constructor(id) { super('captcha'); this.captchaId = id; }
+  /** 需要登录 / 额度耗尽 */
+  class LoginNeeded extends Error {
+    constructor() { super('login'); this.needLogin = true; }
+  }
+  class QuotaOut extends Error {
+    constructor(info) { super('quota'); this.quota = info; }
   }
 
   /* ── 缓存 ── */
@@ -69,8 +72,11 @@
       credentials: 'same-origin',
     });
     if (r.status === 401) {
+      let j = {};
+      try { j = await r.json(); } catch (e) {}
+      if (j.reason === 'login_required') throw new LoginNeeded();
       if (await refreshToken()) return api(action, params);
-      throw new Error('会话已失效，请刷新页面');
+      throw new Error(j.error || '会话已失效，请刷新页面');
     }
     if (r.status === 429) {
       let j = {};
@@ -84,7 +90,7 @@
     if (r.status === 403) {
       let j = {};
       try { j = await r.json(); } catch (e) {}
-      if (j.reason === 'captcha_required' && j.captcha) throw new CaptchaNeeded(j.captcha);
+      if (j.reason === 'quota_exhausted') throw new QuotaOut(j);
       throw new Error(j.error || '请求被拒绝');
     }
     if (r.status === 400) {
@@ -153,6 +159,117 @@
     on();
   }
 
+  /* ── 账号 ── */
+  let currentUser = null;
+  let afterLogin = null;
+
+  function paintAuth() {
+    const qp = $('#quotaPill'), lb = $('#loginBtn'), up = $('#userPill'), uph = $('#userPhone');
+    if (currentUser) {
+      qp.hidden = false;
+      qp.textContent = '剩余 ' + currentUser.left + ' 次';
+      lb.hidden = true;
+      up.hidden = false;
+      uph.textContent = currentUser.phone;
+    } else {
+      qp.hidden = true;
+      lb.hidden = false;
+      up.hidden = true;
+    }
+  }
+
+  async function loadMe() {
+    try {
+      const j = await api('me');
+      currentUser = j.user || null;
+    } catch (e) { currentUser = null; }
+    paintAuth();
+  }
+
+  function openLogin(retry) {
+    afterLogin = retry || afterLogin;
+    $('#loginModal').hidden = false;
+    $('#loginPhone').focus();
+  }
+
+  function closeLogin() { $('#loginModal').hidden = true; }
+
+  function showQuotaOut(info) {
+    const list = $('#list');
+    list.innerHTML = `
+      <li class="empty">
+        <span class="big">额</span>
+        <p class="empty-txt">你的 ${info.limit || 150} 次搜题机会已用完</p>
+        <p class="empty-sub">如需更多额度请联系管理员</p>
+      </li>`;
+    $('#meta').textContent = '额度已用尽';
+    $('#pagePos').textContent = '';
+    $('#pager').innerHTML = '';
+  }
+
+  function bindAuth() {
+    $('#loginBtn').addEventListener('click', () => openLogin(null));
+    $('#logoutBtn').addEventListener('click', async () => {
+      try { await api('logout'); } catch (e) {}
+      currentUser = null;
+      paintAuth();
+      toast('已退出');
+      doSearch(0);
+    });
+    $$('#loginModal [data-close]').forEach((el) =>
+      el.addEventListener('click', closeLogin));
+    $('#loginModal').addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLogin();
+    });
+
+    let tick = null;
+    $('#smsBtn').addEventListener('click', async () => {
+      const phone = $('#loginPhone').value.replace(/\D/g, '');
+      if (!/^1[3-9]\d{9}$/.test(phone)) { toast('请输入正确的手机号'); return; }
+      const btn = $('#smsBtn');
+      btn.disabled = true;
+      try {
+        await api('sms_send', { phone });
+        toast('验证码已发送');
+        let n = 60;
+        btn.textContent = `${n}s`;
+        tick = setInterval(() => {
+          n--; btn.textContent = n + 's';
+          if (n <= 0) { clearInterval(tick); btn.disabled = false; btn.textContent = '获取验证码'; }
+        }, 1000);
+        $('#loginCode').focus();
+      } catch (e) {
+        toast(e.message);
+        btn.disabled = false;
+      }
+    });
+
+    const submit = async () => {
+      const phone = $('#loginPhone').value.replace(/\D/g, '');
+      const code = $('#loginCode').value.replace(/\D/g, '');
+      if (!/^1[3-9]\d{9}$/.test(phone)) { toast('请输入正确的手机号'); return; }
+      if (code.length < 4) { toast('请输入验证码'); return; }
+      const btn = $('#loginSubmit');
+      btn.disabled = true; btn.textContent = '验证中…';
+      try {
+        const j = await api('sms_login', { phone, code });
+        currentUser = j.user;
+        paintAuth();
+        closeLogin();
+        toast(j.registered ? '注册成功，欢迎使用' : '登录成功');
+        const fn = afterLogin; afterLogin = null;
+        if (fn) fn(); else doSearch(0);
+      } catch (e) {
+        toast(e.message);
+      } finally {
+        btn.disabled = false; btn.textContent = '登录 / 注册';
+      }
+    };
+    $('#loginSubmit').addEventListener('click', submit);
+    $('#loginCode').addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+    $('#loginPhone').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#smsBtn').click(); });
+  }
+
   /* ── 检索 ── */
   const state = { q: '', subject: '', type: '', page: 0, total: 0, pages: 0 };
 
@@ -175,56 +292,6 @@
           <span class="lab">答案</span><span class="v${isJudge(item.type) ? ' is-judge' : ''}">${esc(item.answer)}</span>
         </div>
       </li>`;
-  }
-
-  let pendingRetry = null;
-
-  function renderCaptcha(id, retry) {
-    pendingRetry = retry || (() => doSearch(0, true));
-    const list = $('#list');
-    const qs = new URLSearchParams({ action: 'captcha', id });
-    list.innerHTML = `
-      <li class="empty captcha-wrap">
-        <span class="big">验</span>
-        <p class="empty-txt">检测到访问频率异常，请完成人机验证后继续</p>
-        <div class="captcha-box">
-          <img src="/api.php?${qs}" alt="验证码" width="132" height="46" id="capImg">
-          <input id="capAnswer" type="text" maxlength="6" placeholder="输入图中字符"
-                 autocomplete="off" spellcheck="false" aria-label="验证码">
-          <button class="go" type="button" id="capSubmit">确认</button>
-        </div>
-        <p class="captcha-hint">通过后 10 分钟内不再验证 ·
-          <button class="link-btn" type="button" id="capRefresh">换一张</button></p>
-      </li>`;
-    $('#meta').textContent = '需要人机验证';
-    $('#pagePos').textContent = '';
-    $('#pager').innerHTML = '';
-    const inp = $('#capAnswer');
-    inp.focus();
-
-    const submit = async () => {
-      const ans = inp.value.trim();
-      if (!ans) { inp.focus(); return; }
-      const btn = $('#capSubmit');
-      btn.disabled = true; btn.textContent = '校验中';
-      try {
-        await api('captcha_verify', { id, answer: ans });
-        toast('验证通过');
-        const fn = pendingRetry; pendingRetry = null;
-        if (fn) fn();
-      } catch (e) {
-        toast(e.message || '验证失败');
-        btn.disabled = false; btn.textContent = '确认';
-        inp.value = ''; inp.focus();
-        if (e.message && e.message.includes('失效')) doSearch(0, true);
-      }
-    };
-    $('#capSubmit').addEventListener('click', submit);
-    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
-    $('#capRefresh').addEventListener('click', () => {
-      $('#capImg').src = `/api.php?action=captcha&id=${encodeURIComponent(id)}&t=${Date.now()}`;
-      inp.value = ''; inp.focus();
-    });
   }
 
   function scrollToList() {
@@ -285,7 +352,8 @@
       renderPager();
       if (jump) scrollToList();
     } catch (e) {
-      if (e instanceof CaptchaNeeded) { renderCaptcha(e.captchaId, () => doSearch(0, true)); return; }
+      if (e instanceof LoginNeeded) { openLogin(() => doSearch(0, true)); return; }
+      if (e instanceof QuotaOut) { showQuotaOut(e.quota); return; }
       list.innerHTML = '';
       meta.textContent = '';
       toast(e.message);
@@ -383,7 +451,8 @@
       bindQuiz();
       updateScore();
     } catch (e) {
-      if (e instanceof CaptchaNeeded) { renderCaptcha(e.captchaId, () => startQuiz()); return; }
+      if (e instanceof LoginNeeded) { openLogin(() => startQuiz()); return; }
+      if (e instanceof QuotaOut) { showQuotaOut(e.quota); return; }
       list.innerHTML = '';
       $('#quizHint').textContent = '';
       toast(e.message);
@@ -578,8 +647,9 @@
   /* ── 启动 ── */
   initTheme();
   initScrollLine();
+  bindAuth();
   bind();
-  loadSubjects().then(() => doSearch(0));
+  loadMe().then(() => loadSubjects().then(() => doSearch(0)));
   (async () => {
     const j = cache.get('stats', 10 * 60 * 1000);
     if (j) {

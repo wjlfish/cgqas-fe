@@ -168,34 +168,62 @@ input,select{ font:inherit; color:inherit }
 .empty .big{ display:block; font-family:"Songti SC",STSong,SimSun,serif;
   font-size:34px; line-height:1; margin-bottom:14px; color:var(--rule) }
 .empty-txt{ margin:0; font-size:13px }
+.empty-sub{ margin:10px 0 0; font-size:11.5px; color:var(--ink-3) }
 .empty-tags{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:16px }
 .skel{ height:64px; border-bottom:1px solid var(--rule-soft);
   background:linear-gradient(90deg,transparent,var(--rule-soft),transparent);
   background-size:200% 100%; animation:sh 1.4s linear infinite }
 @keyframes sh{ to{ background-position:-200% 0 } }
 
-/* 人机验证 */
-.captcha-wrap{ padding:52px 0 64px }
-.captcha-box{
-  display:flex; align-items:center; justify-content:center; gap:10px;
-  margin-top:20px; flex-wrap:wrap;
+/* 账号 */
+.quota{ border-color:var(--rule) }
+.login-btn{
+  height:26px; padding:0 12px; font-size:12px; letter-spacing:.06em;
+  border:1px solid var(--ink); color:var(--ink); transition:.2s var(--ease);
 }
-.captcha-box img{
-  display:block; border:1px solid var(--rule); background:var(--paper-2);
-  user-select:none; -webkit-user-drag:none;
+.login-btn:hover{ background:var(--ink); color:var(--paper) }
+.user-pill{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--ink-2) }
+.logout-btn{ font-size:11.5px; color:var(--ink-3); border-bottom:1px solid var(--rule) }
+.logout-btn:hover{ color:var(--seal); border-bottom-color:var(--seal) }
+
+/* 登录弹窗 */
+.modal{ position:fixed; inset:0; z-index:300; display:grid; place-items:center }
+.modal-mask{ position:absolute; inset:0; background:rgba(23,21,15,.42); backdrop-filter:blur(2px) }
+.modal-card{
+  position:relative; width:min(360px,calc(100% - 32px));
+  background:var(--paper); border:1px solid var(--rule);
+  padding:26px 24px 22px; box-shadow:0 18px 50px rgba(0,0,0,.16);
+  animation:modalIn .26s var(--ease-out) both;
 }
-.captcha-box input{
-  height:38px; width:158px; padding:0 12px; font-size:14px; letter-spacing:.14em;
-  border:1px solid var(--rule); background:var(--paper-2); color:var(--ink);
-  outline:none; text-transform:uppercase; font-family:ui-monospace,Menlo,monospace;
+@keyframes modalIn{ from{ opacity:0; transform:translateY(10px) scale(.99) } to{ opacity:1; transform:none } }
+.modal-close{
+  position:absolute; top:8px; right:10px; width:28px; height:28px;
+  font-size:18px; line-height:1; color:var(--ink-3);
 }
-.captcha-box input:focus{ border-color:var(--seal); background:var(--paper) }
-.captcha-box .go{ height:38px }
-.captcha-hint{ margin:16px 0 0; font-size:11.5px; color:var(--ink-3) }
-.link-btn{
-  color:var(--ink-3); font-size:11.5px; border-bottom:1px solid var(--rule); padding-bottom:1px;
+.modal-close:hover{ color:var(--ink) }
+.modal-card h2{
+  margin:0 0 6px; font-family:"Songti SC","Source Han Serif SC",STSong,SimSun,serif;
+  font-size:19px; font-weight:600;
 }
-.link-btn:hover{ color:var(--seal); border-bottom-color:var(--seal) }
+.modal-sub{ margin:0 0 18px; font-size:11.5px; color:var(--ink-3) }
+.modal-field{
+  display:flex; align-items:center; gap:8px; height:40px; padding:0 10px;
+  border:1px solid var(--rule); background:var(--paper-2); margin-bottom:10px;
+}
+.modal-field:focus-within{ border-color:var(--seal); background:var(--paper) }
+.modal-field .pre{ font-size:12.5px; color:var(--ink-3); border-right:1px solid var(--rule); padding-right:8px }
+.modal-field input{
+  flex:1; min-width:0; border:0; background:none; outline:none; font-size:14px;
+  color:var(--ink); letter-spacing:.04em;
+}
+.sms-btn{
+  flex:0 0 auto; font-size:12px; color:var(--seal); white-space:nowrap;
+  border-bottom:1px solid transparent; padding-bottom:1px;
+}
+.sms-btn:hover:not(:disabled){ border-bottom-color:var(--seal) }
+.sms-btn:disabled{ color:var(--ink-3); cursor:not-allowed }
+.go.full{ width:100%; margin-top:6px; height:40px }
+.modal-hint{ margin:12px 0 0; font-size:11px; color:var(--ink-3); text-align:center }
 
 /* 练习 */
 .quiz-actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap;
