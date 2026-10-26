@@ -120,12 +120,32 @@ try {
             if (mb_strlen($q) > $c['query_max_len']) {
                 fail('关键词过长', 400);
             }
-            if ($page >= $c['page_max']) {
-                fail('页码超出范围', 400);
-            }
             $validTypes = ['判断', '单选', '多选', '填空', '问答'];
             if ($type !== '' && !in_array($type, $validTypes, true)) {
                 fail('题型参数非法', 400);
+            }
+
+            // ① 关键词门槛: 没有关键字就只能抽样浏览, 不允许翻页
+            $hasKw = mb_strlen($q) >= (int) $c['limit']['kw_min_len'];
+            if (!$hasKw && $page > 0) {
+                fail('翻页需要输入至少 2 个关键字', 400, ['reason' => 'need_keyword']);
+            }
+
+            // ② 累计配额预检(未扣减)
+            [$bok, $binfo] = budget_guard($ipBin, 0, false);
+            if (!$bok) {
+                header('Retry-After: ' . (int) ($binfo['retry_after'] ?? 3600));
+                log_request('search', $_GET, 429, 0);
+                fail('今日浏览额度已用完，请明日再来', 429, $binfo);
+            }
+
+            if ($hasKw) {
+                $pageMax = (int) $c['limit']['kw_pages_max'];
+                if ($page >= $pageMax) {
+                    fail('可翻阅页数已达上限，请细化关键词', 400, ['reason' => 'page_cap']);
+                }
+            } else {
+                $page = 0;
             }
 
             // 翻页枚举检测
@@ -153,9 +173,6 @@ try {
                                      WHERE x.question_id = q.id AND s2.name = ?)';
                 $params[] = $subject;
             }
-            // 无任何筛选条件时, 不倾倒全库(按 id 排序会连续出现大量同类题),
-            // 改为「每日轮换的混合精选」, 兼顾观感与反爬。
-            $sample = ($q === '' && $subject === '' && $type === '');
             if (!$where) {
                 $where[] = '1 = 1';
             }
@@ -166,14 +183,16 @@ try {
             $total = (int) $cntSt->fetchColumn();
 
             $lim = (int) $c['page_size'];
-            if ($sample) {
-                $seed = date('Ymd');
-                $off  = 0;
-                $order = "ORDER BY MD5(CONCAT(q.id, '$seed'))";
-            } else {
+
+            if ($hasKw) {
                 $off   = $page * $lim;
                 $order = 'ORDER BY q.id';
+            } else {
+                // ③ 无关键字 → 随机抽样, 每次结果不同, 枚举收益极低
+                $off   = 0;
+                $order = 'ORDER BY RAND()';
             }
+
             $sql  = "SELECT q.id, q.type, q.stem, q.options, q.answer, q.source,
                             (SELECT GROUP_CONCAT(s3.name ORDER BY s3.name SEPARATOR ' / ')
                              FROM question_subjects x3
@@ -194,12 +213,16 @@ try {
                 return $r;
             }, $rows);
 
+            // ④ 扣减配额
+            budget_guard($ipBin, count($items), true);
+
             $out = [
                 'ok'     => true,
                 'total'  => $total,
                 'page'   => $page,
-                'pages'  => $sample ? 1 : min((int) ceil($total / $lim), (int) $c['page_max']),
-                'sample' => $sample,
+                'pages'  => $hasKw ? min((int) ceil($total / $lim), (int) $c['limit']['kw_pages_max']) : 0,
+                'mode'   => $hasKw ? 'search' : 'random',
+                'kw_min' => (int) $c['limit']['kw_min_len'],
                 'items'  => $items,
             ];
             break;

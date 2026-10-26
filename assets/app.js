@@ -70,8 +70,16 @@
     if (r.status === 429) {
       let j = {};
       try { j = await r.json(); } catch (e) {}
+      if (j.reason === 'daily_budget') {
+        throw new Error('今天的浏览额度已用完，明天再来');
+      }
       const sec = j.retry_after || 60;
       throw new Error(`请求过于频繁，请 ${sec >= 60 ? Math.ceil(sec / 60) + ' 分钟' : sec + ' 秒'}后再试`);
+    }
+    if (r.status === 400) {
+      let j = {};
+      try { j = await r.json(); } catch (e) {}
+      throw new Error(j.error || '请求参数有误');
     }
     if (!r.ok) throw new Error('服务异常 (' + r.status + ')');
     return r.json();
@@ -202,14 +210,16 @@
       }
 
       const cond = [state.q ? `“${state.q}”` : '', state.subject, state.type].filter(Boolean).join(' ');
-      if (j.sample) {
-        meta.innerHTML = `今日精选 <b>${j.items.length}</b> 题 · 全库 <b>${j.total.toLocaleString()}</b> 条`;
-        pos.textContent = '输入关键词或筛选条件开始检索';
-      } else {
-        meta.innerHTML = `${cond ? esc(cond) + ' — ' : ''}共 <b>${j.total.toLocaleString()}</b> 条`;
-        pos.textContent = `${pad(page + 1)} / ${pad(Math.max(1, j.pages))}`;
+      if (j.mode === 'random') {
+        meta.innerHTML = `随机浏览 <b>${j.items.length}</b> 题 · 命中 <b>${j.total.toLocaleString()}</b> 条`;
+        pos.innerHTML = '每批随机抽取 · 输入关键字可精确检索并翻页';
+        list.innerHTML = j.items.map((it, i) => renderCard(it, '', i)).join('');
+        renderRefresh();
+        if (jump) scrollToList();
+        return;
       }
-
+      meta.innerHTML = `${cond ? esc(cond) + ' — ' : ''}共 <b>${j.total.toLocaleString()}</b> 条`;
+      pos.textContent = `${pad(page + 1)} / ${pad(Math.max(1, j.pages))}`;
       list.innerHTML = j.items.map((it, i) => renderCard(it, state.q, i)).join('');
       renderPager();
       if (jump) scrollToList();
@@ -218,6 +228,12 @@
       meta.textContent = '';
       toast(e.message);
     }
+  }
+
+  function renderRefresh() {
+    const p = $('#pager');
+    p.innerHTML = `<div class="nums"><button data-refresh="1">换一批 ↻</button></div>`;
+    $('[data-refresh]').addEventListener('click', () => doSearch(0));
   }
 
   function renderPager() {

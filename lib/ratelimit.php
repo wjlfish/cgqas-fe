@@ -213,3 +213,47 @@ function log_request(string $action, array $data, int $status, int $costMs): voi
         // 审计失败不影响业务
     }
 }
+
+/**
+ * 记录配额: 每次返回 n 条结果累加到 serve_budget。
+ * 返回 [是否允许, 明细]。超限时拒绝, 不做任何扣减。
+ */
+function budget_guard(string $ipBin, int $n, bool $commit = true): array
+{
+    $c    = cfg();
+    $lim  = $c['limit'];
+    $day  = intdiv(time(), 86400);
+    $win  = intdiv(time(), 300);           // 5 分钟窗口
+    $pdo  = db();
+
+    $st = $pdo->prepare("SELECT items, win_start, win_items FROM serve_budget WHERE ip = ? AND day = ?");
+    $st->execute([$ipBin, $day]);
+    $r = $st->fetch() ?: ['items' => 0, 'win_start' => $win, 'win_items' => 0];
+
+    $items = (int) $r['items'];
+    $winItems = ((int) $r['win_start'] === $win) ? (int) $r['win_items'] : 0;
+
+    if ($items + $n > (int) $lim['daily_items']) {
+        return [false, ['reason' => 'daily_budget', 'used' => $items,
+                        'limit' => (int) $lim['daily_items'], 'retry_after' => 86400 - (time() % 86400)]];
+    }
+    if ($winItems + $n > (int) $lim['window_items']) {
+        // 5 分钟内索取过多 → 直接封禁, 比单纯拒绝更有效
+        ban($ipBin, (int) $lim['ban_seconds']);
+        return [false, ['reason' => 'burst_items', 'retry_after' => (int) $lim['ban_seconds']]];
+    }
+
+    if ($commit) {
+        $pdo->prepare(
+            "INSERT INTO serve_budget (ip, day, items, win_start, win_items)
+             VALUES (?,?,?,?,?) AS new
+             ON DUPLICATE KEY UPDATE
+               items     = serve_budget.items + new.items,
+               win_items = IF(serve_budget.win_start = new.win_start,
+                              serve_budget.win_items + new.win_items, new.win_items),
+               win_start = new.win_start"
+        )->execute([$ipBin, $day, $n, $win, $n]);
+    }
+
+    return [true, ['used' => $items + $n, 'limit' => (int) $lim['daily_items']]];
+}

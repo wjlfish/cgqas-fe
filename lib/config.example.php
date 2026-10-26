@@ -33,6 +33,12 @@ return [
         'hard_ban_seconds'=> 86400,
         'hard_threshold'  => 150,
         'enum_pages_5min' => 40,
+
+        // 防全库拖取
+        'kw_min_len'      => 2,    // 允许翻页所需最小关键词长度
+        'kw_pages_max'    => 10,   // 有关键词时最多可翻页数(每页 20 → 200 条/查询)
+        'daily_items'     => 1500, // 单 IP 每日累计可返回的记录数
+        'window_items'    => 400,  // 单 IP 5 分钟内可返回的记录数
     ],
 
     // 命中即 24h 封禁的 UA 特征
