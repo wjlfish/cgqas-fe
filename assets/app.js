@@ -536,8 +536,7 @@
         [j.total, '题库总量'],
         [t['判断'] || 0, '判断题'],
         [(t['单选'] || 0) + (t['多选'] || 0), '选择题'],
-        [j.today_requests, '今日请求'],
-        [j.today_ips, '今日访客'],
+        [Object.keys(t).length, '题型数'],
       ];
       $('#statGrid').innerHTML = cells.map(([n, l]) =>
         `<div class="stat"><div class="n" data-n="${n}">0</div><div class="l">${l}</div></div>`).join('');

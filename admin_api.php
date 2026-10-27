@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+ini_set('display_errors', '0');
 require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/admin.php';
 require_once __DIR__ . '/lib/response.php';
@@ -93,7 +94,8 @@ try {
         "INSERT INTO dedupe_decisions (pair_key, a_id, b_id, action, category, score)
          VALUES (?,?,?,?,?,?)
          ON DUPLICATE KEY UPDATE action = VALUES(action)"
-    )->execute([$key, $aid, $bid, $choice, (string) $pair['category'], (float) $pair['score']]);
+    )->execute([$key, $aid, $bid, $choice, (string) $pair['category'],
+                (float) ($pair['j_full'] ?? 0)]);
     $pdo->commit();
 } catch (Throwable $e) {
     $pdo->rollBack();

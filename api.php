@@ -355,12 +355,6 @@ try {
                  JOIN question_subjects x ON x.subject_id = s.id
                  GROUP BY s.id, s.name ORDER BY n DESC LIMIT 12"
             )->fetchAll();
-            $todayReq = (int) $pdo->query(
-                "SELECT COUNT(*) FROM request_log WHERE created_at >= CURDATE()"
-            )->fetchColumn();
-            $todayIp = (int) $pdo->query(
-                "SELECT COUNT(DISTINCT ip) FROM request_log WHERE created_at >= CURDATE()"
-            )->fetchColumn();
             // 最后更新时间: 优先取 settings 里人工维护的值, 否则回落题库最大写入时间
             $updated = null;
             try {
@@ -374,7 +368,6 @@ try {
             $out = ['ok' => true, 'total' => $total, 'by_type' => $byType,
                     'top_subjects' => array_map(
                         fn($r) => ['name' => $r['name'], 'count' => (int) $r['n']], $top),
-                    'today_requests' => $todayReq, 'today_ips' => $todayIp,
                     'updated_at' => $updated ? date('Y-m-d', strtotime((string) $updated)) : ''];
             break;
         }
