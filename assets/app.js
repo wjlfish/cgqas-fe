@@ -395,6 +395,31 @@
   }
 
   async function doSearch(page = 0, jump = false) {
+    // 关键词是硬门槛: 空关键词直接本地拦截, 不请求、不扣额度
+    const kw = (state.q || '').trim();
+    if (kw.length < 2) {
+      const list = $('#list');
+      list.innerHTML = `
+        <li class="empty">
+          <span class="big">搜</span>
+          <p class="empty-txt">请输入至少 2 个字的关键词</p>
+          <p class="empty-sub">题库不支持随机浏览，请按题干或答案关键词检索</p>
+          <div class="empty-tags">
+            ${['排球','篮球','太极拳','奥林匹克','健美操','游泳'].map(k =>
+              `<button class="go" data-suggest="${k}">${k}</button>`).join('')}
+          </div>
+        </li>`;
+      $$('#list [data-suggest]').forEach((b) => b.addEventListener('click', () => {
+        $('#q').value = b.dataset.suggest;
+        state.q = b.dataset.suggest;
+        doSearch(0, true);
+      }));
+      $('#meta').textContent = '等待关键词';
+      $('#pagePos').textContent = '';
+      $('#pager').innerHTML = '';
+      return;
+    }
+
     const list = $('#list'), meta = $('#meta'), pos = $('#pagePos');
     state.page = page;
     list.innerHTML = '<div class="skel"></div><div class="skel"></div><div class="skel"></div>';
@@ -435,14 +460,6 @@
       }
 
       const cond = [state.q ? `“${state.q}”` : '', state.subject, state.type].filter(Boolean).join(' ');
-      if (j.mode === 'random') {
-        meta.innerHTML = `随机浏览 <b>${j.items.length}</b> 题 · 命中 <b>${j.total.toLocaleString()}</b> 条`;
-        pos.innerHTML = '每批随机抽取 · 输入关键字可精确检索并翻页';
-        list.innerHTML = j.items.map((it, i) => renderCard(it, '', i)).join('');
-        renderRefresh();
-        if (jump) scrollToList();
-        return;
-      }
       meta.innerHTML = `${cond ? esc(cond) + ' — ' : ''}共 <b>${j.total.toLocaleString()}</b> 条`;
       pos.textContent = `${pad(page + 1)} / ${pad(Math.max(1, j.pages))}`;
       list.innerHTML = j.items.map((it, i) => renderCard(it, state.q, i)).join('');
@@ -455,12 +472,6 @@
       meta.textContent = '';
       toast(e.message);
     }
-  }
-
-  function renderRefresh() {
-    const p = $('#pager');
-    p.innerHTML = `<div class="nums"><button data-refresh="1">换一批 ↻</button></div>`;
-    $('[data-refresh]').addEventListener('click', () => doSearch(0));
   }
 
   function renderPager() {
@@ -528,6 +539,7 @@
 
   async function startQuiz() {
     const subject = $('#quizSubject').value;
+    if (!subject) { toast('请先选择科目'); $('#quizSubject').focus(); return; }
     const n = Number($('#quizN').value) || 10;
     const list = $('#quizList');
     list.innerHTML = '<div class="skel"></div><div class="skel"></div>';
