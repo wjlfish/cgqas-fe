@@ -4,7 +4,6 @@
  *   GET api.php?action=search&q=&subject=&type=&page=
  *   GET api.php?action=subjects
  *   GET api.php?action=stats
- *   GET api.php?action=quiz&subject=&n=
  *   GET api.php?action=detail&id=
  *   GET api.php?action=refresh   刷新令牌
  *   GET api.php?action=__trap    蜜罐
@@ -90,7 +89,7 @@ if (!verify_token()) {
 }
 
 // ── 4.5 登录与额度 ──
-$NEED_LOGIN = ['search', 'quiz'];
+$NEED_LOGIN = ['search'];
 $me = auth_current_user();
 
 $AUTH_REQUIRED = (bool) (auth_cfg()['require'] ?? true);
@@ -99,6 +98,15 @@ if (in_array($action, $NEED_LOGIN, true) && $AUTH_REQUIRED) {
     if (!$me) {
         log_request($action, $_GET, 401, (int) ((microtime(true) - $t0) * 1000));
         fail('请先完成手机号验证', 401, ['reason' => 'login_required']);
+    }
+    // 先做廉价校验, 避免无效请求也扣额度
+    if ($action === 'search') {
+        $q0 = trim((string) ($_GET['q'] ?? ''));
+        if (mb_strlen($q0) < (int) $c['limit']['kw_min_len']) {
+            log_request($action, $_GET, 400, (int) ((microtime(true) - $t0) * 1000));
+            fail('请输入至少 ' . (int) $c['limit']['kw_min_len'] . ' 个字的关键词', 400,
+                 ['reason' => 'need_keyword']);
+        }
     }
     [$qok, $left, $limit] = auth_consume($me['id'], 1);
     if (!$qok) {
@@ -151,10 +159,11 @@ try {
                 fail('题型参数非法', 400);
             }
 
-            // ① 关键词门槛: 没有关键字就只能抽样浏览, 不允许翻页
+            // ① 关键词门槛: 必须有关键字, 不允许空关键词随机浏览
             $hasKw = mb_strlen($q) >= (int) $c['limit']['kw_min_len'];
-            if (!$hasKw && $page > 0) {
-                fail('翻页需要输入至少 2 个关键字', 400, ['reason' => 'need_keyword']);
+            if (!$hasKw) {
+                fail('请输入至少 ' . (int) $c['limit']['kw_min_len'] . ' 个字的关键词', 400,
+                     ['reason' => 'need_keyword']);
             }
 
             // ② 累计配额预检(未扣减)
@@ -165,13 +174,9 @@ try {
                 fail('今日浏览额度已用完，请明日再来', 429, $binfo);
             }
 
-            if ($hasKw) {
-                $pageMax = (int) $c['limit']['kw_pages_max'];
-                if ($page >= $pageMax) {
-                    fail('可翻阅页数已达上限，请细化关键词', 400, ['reason' => 'page_cap']);
-                }
-            } else {
-                $page = 0;
+            $pageMax = (int) $c['limit']['kw_pages_max'];
+            if ($page >= $pageMax) {
+                fail('可翻阅页数已达上限，请细化关键词', 400, ['reason' => 'page_cap']);
             }
 
             // 翻页枚举检测
@@ -210,14 +215,8 @@ try {
 
             $lim = (int) $c['page_size'];
 
-            if ($hasKw) {
-                $off   = $page * $lim;
-                $order = 'ORDER BY q.id';
-            } else {
-                // ③ 无关键字 → 随机抽样, 每次结果不同, 枚举收益极低
-                $off   = 0;
-                $order = 'ORDER BY RAND()';
-            }
+            $off   = $page * $lim;
+            $order = 'ORDER BY q.id';
 
             $sql  = "SELECT q.id, q.type, q.stem, q.options, q.answer, q.source,
                             (SELECT GROUP_CONCAT(s3.name ORDER BY s3.name SEPARATOR ' / ')
@@ -254,8 +253,8 @@ try {
                 'ok'     => true,
                 'total'  => $total,
                 'page'   => $page,
-                'pages'  => $hasKw ? min((int) ceil($total / $lim), (int) $c['limit']['kw_pages_max']) : 0,
-                'mode'   => $hasKw ? 'search' : 'random',
+                'pages'  => min((int) ceil($total / $lim), (int) $c['limit']['kw_pages_max']),
+                'mode'   => 'search',
                 'kw_min' => (int) $c['limit']['kw_min_len'],
                 'left'   => max(0, $me['limit'] - $me['used']),
                 'items'  => $items,
@@ -339,34 +338,6 @@ try {
                 'limit' => $u['limit'],
                 'left'  => max(0, $u['limit'] - $u['used']),
             ]];
-            break;
-        }
-
-        // ─────────── 随机练习 ───────────
-        case 'quiz': {
-            $subject = trim((string) ($_GET['subject'] ?? ''));
-            $n       = min(max(1, (int) ($_GET['n'] ?? 5)), (int) $c['quiz_max']);
-            $params  = [];
-            $join    = '';
-            $w       = '1=1';
-            if ($subject !== '') {
-                $join     = 'JOIN question_subjects x ON x.question_id = q.id
-                             JOIN subjects s ON s.id = x.subject_id';
-                $w        = 's.name = ?';
-                $params[] = $subject;
-            }
-            $sql = "SELECT q.id, q.type, q.stem, q.options, q.answer
-                    FROM questions q $join
-                    WHERE $w AND q.type IN ('判断','单选','多选')
-                    ORDER BY RAND() LIMIT $n";
-            $st = $pdo->prepare($sql);
-            $st->execute($params);
-            $rows = $st->fetchAll();
-            $out = ['ok' => true, 'items' => array_map(static function ($r) {
-                $r['id']      = (int) $r['id'];
-                $r['options'] = $r['options'] ? json_decode($r['options'], true) : [];
-                return $r;
-            }, $rows)];
             break;
         }
 

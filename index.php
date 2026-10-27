@@ -74,7 +74,6 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
     </a>
     <nav class="nav" aria-label="主导航">
       <button class="nav-link is-active" data-tab="search">检索</button>
-      <button class="nav-link" data-tab="quiz">练习</button>
       <button class="nav-link" data-tab="stats">统计</button>
     </nav>
     <span class="pill" id="topCount">—</span>
@@ -140,33 +139,10 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
   </div>
 </main>
 
-<!-- ══ 练习 ══ -->
-<main class="view" id="view-quiz">
-  <div class="shell">
-    <div class="quiz-actions">
-      <h1 class="view-title">随机练习</h1>
-      <label class="sel">
-        <span>科目</span>
-        <select id="quizSubject"><option value="">全部科目</option></select>
-      </label>
-      <label class="sel">
-        <span>题数</span>
-        <select id="quizN"><option>5</option><option selected>10</option><option>20</option></select>
-      </label>
-      <button class="go solid" id="quizStart" type="button">开始练习</button>
-    </div>
-    <div class="list-head">
-      <span class="count" id="quizHint">点击开始随机抽题，判断题与单选题点一次即判，多选题需确认</span>
-      <span class="quiz-score" id="quizScore"></span>
-    </div>
-    <ol class="results" id="quizList" aria-live="polite"></ol>
-  </div>
-</main>
-
 <!-- ══ 统计 ══ -->
 <main class="view" id="view-stats">
   <div class="shell">
-    <div class="quiz-actions">
+    <div class="view-actions">
       <h1 class="view-title">题库统计</h1>
     </div>
     <div class="stat-grid" id="statGrid"></div>

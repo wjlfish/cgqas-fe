@@ -510,147 +510,17 @@
         j = await api('subjects');
         cache.set('subjects', j);
       }
-      const sel = $('#subject'), qsel = $('#quizSubject');
+      const sel = $('#subject');
       j.subjects.forEach((s) => {
         const o = document.createElement('option');
         o.value = s.name;
         o.textContent = `${s.name} (${s.count})`;
         sel.appendChild(o);
-        const o2 = document.createElement('option');
-        o2.value = s.name;
-        o2.textContent = s.name;
-        qsel.appendChild(o2);
       });
       if (j.total) {
         $('#topCount').textContent = j.total.toLocaleString() + ' 题';
       }
     } catch (e) { toast(e.message); }
-  }
-
-  /* ── 练习 ── */
-  let quizItems = [], quizDone = 0, quizRight = 0;
-
-  function ansSet(v) {
-    const s = String(v == null ? '' : v).toUpperCase().trim();
-    if (['正确', '对', '√', 'T', 'TRUE'].includes(s)) return 'T';
-    if (['错误', '错', '×', 'F', 'FALSE'].includes(s)) return 'F';
-    return s.replace(/[^A-Z0-9]/g, '').split('').sort().join('');
-  }
-
-  async function startQuiz() {
-    const subject = $('#quizSubject').value;
-    if (!subject) { toast('请先选择科目'); $('#quizSubject').focus(); return; }
-    const n = Number($('#quizN').value) || 10;
-    const list = $('#quizList');
-    list.innerHTML = '<div class="skel"></div><div class="skel"></div>';
-    $('#quizScore').textContent = '';
-    $('#quizHint').textContent = '抽题中…';
-    quizItems = []; quizDone = 0; quizRight = 0;
-
-    try {
-      const j = await api('quiz', { subject, n });
-      if (!j.items.length) {
-        list.innerHTML = '<li class="empty"><span class="big">空</span><p class="empty-txt">该科目暂无可用题目</p></li>';
-        $('#quizHint').textContent = '';
-        return;
-      }
-      quizItems = j.items;
-      $('#quizHint').textContent = `${subject || '全部科目'} · ${j.items.length} 题`;
-      list.innerHTML = j.items.map((it, i) => renderQuiz(it, i)).join('');
-      bindQuiz();
-      updateScore();
-    } catch (e) {
-      if (e instanceof LoginNeeded) { openLogin(() => startQuiz()); return; }
-      if (e instanceof QuotaOut) { showQuotaOut(e.quota); return; }
-      list.innerHTML = '';
-      $('#quizHint').textContent = '';
-      toast(e.message);
-    }
-  }
-
-  function renderQuiz(it, i) {
-    let opts = '';
-    if (it.type === '判断') {
-      opts = [['对', '正确'], ['错', '错误']].map(([lab, v]) =>
-        `<div class="qopt" data-i="${i}" data-v="${esc(v)}"><span class="k">${lab}</span></div>`).join('');
-    } else if (it.options && it.options.length) {
-      opts = it.options.map((o) =>
-        `<div class="qopt" data-i="${i}" data-v="${esc(o.key)}"><span class="k">${esc(o.key)}</span> ${esc(optText(o.text))}</div>`
-      ).join('');
-    } else {
-      opts = '<div class="qopt" style="cursor:default"><span class="k">·</span> 该题型请自行核对</div>';
-    }
-    const multi = it.type === '多选';
-    return `
-      <li class="q" id="qz-${i}">
-        <div class="q-index">${pad(i + 1)}</div>
-        <div>
-          <div class="q-meta"><span class="tag">${esc(it.type)}</span>${multi ? '<span class="sep">·</span><span>可多选</span>' : ''}</div>
-          <p class="q-stem">${esc(it.stem)}</p>
-          <div style="margin-top:6px">${opts}</div>
-          ${multi ? `<button class="confirm" data-confirm="${i}">确认答案 →</button>` : ''}
-        </div>
-        <div class="q-ans" hidden><span class="lab">答案</span><span class="v"></span></div>
-      </li>`;
-  }
-
-  function revealAns(card, item) {
-    const box = card.querySelector('.q-ans');
-    box.hidden = false;
-    box.querySelector('.v').textContent = item.answer;
-  }
-
-  function markOpts(card, item, pickedSet) {
-    const target = ansSet(item.answer);
-    card.querySelectorAll('.qopt').forEach((o) => {
-      const v = ansSet(o.dataset.v);
-      if (target.includes(v) && v !== '') o.classList.add('right');
-      else if (pickedSet.includes(v)) o.classList.add('wrong');
-    });
-  }
-
-  function bindQuiz() {
-    $$('#quizList .qopt[data-i]').forEach((el) => {
-      el.addEventListener('click', () => {
-        const i = Number(el.dataset.i);
-        const card = document.getElementById('qz-' + i);
-        if (!card || card.dataset.answered) return;
-        const item = quizItems[i];
-        if (item.type === '多选') { el.classList.toggle('picked'); return; }
-        card.dataset.answered = '1';
-        const picked = ansSet(el.dataset.v);
-        const right = picked === ansSet(item.answer);
-        markOpts(card, item, picked);
-        revealAns(card, item);
-        quizDone++; if (right) quizRight++;
-        updateScore();
-      });
-    });
-    $$('#quizList [data-confirm]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const i = Number(btn.dataset.confirm);
-        const card = document.getElementById('qz-' + i);
-        if (!card || card.dataset.answered) return;
-        const item = quizItems[i];
-        const picked = Array.from(card.querySelectorAll('.qopt.picked'))
-          .map((o) => ansSet(o.dataset.v)).sort().join('');
-        if (!picked) { toast('请先选择至少一个选项'); return; }
-        card.dataset.answered = '1';
-        btn.remove();
-        const right = picked === ansSet(item.answer);
-        markOpts(card, item, picked);
-        revealAns(card, item);
-        quizDone++; if (right) quizRight++;
-        updateScore();
-      });
-    });
-  }
-
-  function updateScore() {
-    const el = $('#quizScore');
-    if (!quizDone) { el.textContent = ''; return; }
-    el.innerHTML = `已答 <b>${quizDone}</b> · 正确 <b>${quizRight}</b>` +
-      (quizDone === quizItems.length ? ' · 完成' : '');
   }
 
   /* ── 统计 ── */
@@ -689,7 +559,7 @@
   }
 
   /* ── Tab ── */
-  const TABS = ['search', 'quiz', 'stats'];
+  const TABS = ['search', 'stats'];
   function switchTab(name, push = true) {
     if (!TABS.includes(name)) name = 'search';
     $$('.nav-link').forEach((t) => t.classList.toggle('is-active', t.dataset.tab === name));
@@ -736,8 +606,6 @@
       switchTab('search');
       doSearch(0, true);
     });
-
-    $('#quizStart').addEventListener('click', startQuiz);
 
     addEventListener('keydown', (e) => {
       const tag = (document.activeElement || {}).tagName;
