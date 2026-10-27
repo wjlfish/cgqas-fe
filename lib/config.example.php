@@ -16,10 +16,9 @@ return [
     // 维护/自测用旁路密钥, 通过请求头 X-CG-Admin 传入; 留空则禁用旁路
     'admin_key' => 'CHANGE_ME_ADMIN_PASSWORD',
 
-    'page_size'       => 20,       // 每页条数
+    'page_size'       => 5,        // 每页条数
     'page_max'        => 50,       // 最大页码, 防止全量枚举
     'query_max_len'   => 40,       // 关键词长度上限
-    'quiz_max'        => 20,       // 随机练习题数上限
 
     // ── 限流阈值(按 IP) ──
     'limit' => [
@@ -34,7 +33,7 @@ return [
         'enum_pages_5min' => 40,   // 5 分钟内翻页超过此数视为枚举
         // ── 防全库拖取 ──
         'kw_min_len'      => 2,    // 允许翻页所需的最小关键词长度
-        'kw_pages_max'    => 10,   // 有关键词时最多可翻页数(每页20 → 200条/查询)
+        'kw_pages_max'    => 10,   // 有关键词时最多可翻页数(每页5 → 50条/查询)
         'daily_items'     => 8000, // 单 IP 每日累计可返回的记录数
         'window_items'    => 1200,  // 单 IP 5 分钟内可返回的记录数
     ],
@@ -50,6 +49,15 @@ return [
         'endpoint' => 'https://dypnsapi.aliyuncs.com/',
     ],
 
+    // 阿里云验证码 2.0 (仅在发送短信前校验)
+    'captcha2' => [
+        'enable'   => false,   // 配置 scene_id 与 prefix 后改 true
+        'scene_id' => '',      // 控制台「验证场景」的场景ID
+        'prefix'   => '',      // 控制台概览页「身份标」
+        'region'   => 'cn',
+        'endpoint' => 'https://captcha.cn-shanghai.aliyuncs.com/',
+    ],
+
     // 用户与额度
     'auth' => [
         'require'         => false,  // 短信配好后改 true
@@ -62,6 +70,7 @@ return [
         'sms_phone_daily' => 5,
         'sms_ip_hourly'   => 10,
         'sms_ip_daily'    => 30,
+        'sms_global_10min'=> 20,    // 全站每 10 分钟最多发送条数(成本兜底)
     ],
 
     // 渐进式验证码: 正常用户不弹, 仅异常索取时要求验证
