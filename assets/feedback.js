@@ -97,7 +97,8 @@
         </nav>
 
         <section class="fb-pane" data-pane="wrong">
-          <p class="fb-note">检索题目会消耗 <b>1 次</b>搜题额度（与首页共用）</p>
+          <p class="fb-note">检索题目会消耗 <b>1 次</b>搜题额度（与首页共用）。
+            申报被采纳后会<b>返还这 1 次</b>。</p>
           <form class="fb-search" data-fsearch>
             <input type="search" maxlength="40" placeholder="输入题干或答案关键词，至少 2 字" aria-label="检索错题">
             <button type="submit">检索</button>
@@ -273,7 +274,7 @@
         S.pick = null;
         $('[data-note]', root).value = '';
         $$('.fb-item', root).forEach((li) => li.classList.remove('on'));
-        flash('wrong', '已收到申报，感谢！可以继续点选其他题目。', 'ok');
+        flash('wrong', '已收到申报，感谢！采纳后会返还本次检索的 1 次额度。', 'ok');
       } catch (err) {
         if (err instanceof NeedLogin) askLogin();
         else msg(esc(err.message), 'bad');

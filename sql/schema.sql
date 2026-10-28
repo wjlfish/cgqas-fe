@@ -154,6 +154,7 @@ CREATE TABLE IF NOT EXISTS `feedback` (
   `ua`          VARCHAR(255)    NOT NULL DEFAULT '',
   `status`      TINYINT         NOT NULL DEFAULT 0 COMMENT '0待处理 1已处理 2忽略',
   `admin_note`  VARCHAR(255)    NOT NULL DEFAULT '',
+  `refunded`    TINYINT         NOT NULL DEFAULT 0 COMMENT '错题申报采纳后是否已返还额度',
   `created_at`  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `k_user_kind_time` (`user_id`,`kind`,`created_at`),

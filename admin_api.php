@@ -131,6 +131,35 @@ function q_fetch(PDO $pdo, int $id): ?array
     return $r ?: null;
 }
 
+
+/** 采纳错题申报后返还 1 次检索额度(每份申报只返一次) */
+function refund_quota(PDO $pdo, int $fid, int $qid): int
+{
+    if ($fid <= 0) {
+        return 0;
+    }
+    $st = $pdo->prepare(
+        'SELECT id, user_id, kind, question_id, refunded FROM feedback WHERE id = ?'
+    );
+    $st->execute([$fid]);
+    $fb = $st->fetch();
+    if (!$fb) {
+        return 0;
+    }
+    if ((string) $fb['kind'] !== 'wrong' || (int) $fb['refunded'] === 1) {
+        return 0;
+    }
+    // 只返还与被改动题目一致的那条申报
+    if ((int) $fb['question_id'] !== $qid) {
+        return 0;
+    }
+    $pdo->prepare(
+        'UPDATE users SET searches_used = GREATEST(searches_used - 1, 0) WHERE id = ?'
+    )->execute([(int) $fb['user_id']]);
+    $pdo->prepare('UPDATE feedback SET refunded = 1 WHERE id = ?')->execute([$fid]);
+    return 1;
+}
+
 /* ── 错题处理: 保存题干/选项/答案 ── */
 if ($act === 'q_save') {
     $qid     = (int) ($_POST['id'] ?? 0);
@@ -271,6 +300,7 @@ if ($act === 'q_save') {
             json_encode(['stem' => $newStem, 'options' => $newOpts, 'answer' => $ans], JSON_UNESCAPED_UNICODE),
         ]);
 
+        $refunded = 0;
         if ($fid > 0) {
             $parts = [];
             if ($oldStem !== $newStem) { $parts[] = '已改题干'; }
@@ -280,6 +310,7 @@ if ($act === 'q_save') {
             $pdo->prepare(
                 'UPDATE feedback SET status = 1, admin_note = ? WHERE id = ?'
             )->execute([mb_substr($note, 0, 240), $fid]);
+            $refunded = refund_quota($pdo, $fid, $qid);
         }
         $pdo->commit();
     } catch (Throwable $e) {
@@ -291,6 +322,7 @@ if ($act === 'q_save') {
         'old'        => $oldAns,
         'answer'     => $ans,
         'stem_changed' => $oldStem !== $newStem,
+        'refunded'     => $refunded,
     ]);
 }
 
@@ -317,16 +349,18 @@ if ($act === 'q_delete') {
         $pdo->prepare('DELETE FROM dedupe_decisions WHERE a_id = ? OR b_id = ?')->execute([$qid, $qid]);
         $pdo->prepare('DELETE FROM questions WHERE id = ?')->execute([$qid]);
 
+        $refunded = 0;
         if ($fid > 0) {
             $pdo->prepare('UPDATE feedback SET status = 1, admin_note = ? WHERE id = ?')
                 ->execute([mb_substr('已删除该题 #' . $qid, 0, 240), $fid]);
+            $refunded = refund_quota($pdo, $fid, $qid);
         }
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();
         fail('db error: ' . $e->getMessage(), 500);
     }
-    json_out(['ok' => true, 'deleted' => $qid]);
+    json_out(['ok' => true, 'deleted' => $qid, 'refunded' => $refunded]);
 }
 
 if ($act === 'fb_status') {

@@ -210,7 +210,7 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="/assets/app.js?v=7"></script>
-<script src="/assets/feedback.js?v=7"></script>
+<script src="/assets/feedback.js?v=8"></script>
 <script>
 (function () {
   var fab = document.getElementById('fbFab');

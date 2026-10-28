@@ -264,7 +264,7 @@ if ($tab === 'feedback') {
     $total = (int) $st->fetchColumn();
     $st = $pdo->prepare(
         "SELECT f.id, f.kind, f.question_id, f.reason, f.content, f.contact,
-                f.status, f.created_at, u.phone
+                f.status, f.refunded, f.created_at, u.phone
          FROM feedback f LEFT JOIN users u ON u.id = f.user_id
          WHERE $where ORDER BY f.status ASC, f.id DESC LIMIT $LIM OFFSET " . ($page * $LIM)
     );
@@ -824,6 +824,9 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
             } else {
                 echo $st === 0 ? '<span class="tag bad">待处理</span>'
                    : ($st === 1 ? '<span class="tag ok">已处理</span>' : '<span class="tag">已忽略</span>');
+                if ((int) ($r['refunded'] ?? 0) === 1) {
+                    echo ' <span class="tag">已返还</span>';
+                }
             }
           ?>
         </td>
