@@ -39,6 +39,15 @@ if ($action === '') {
     fail('missing action', 400);
 }
 
+// ── 含手机号/验证码的动作只接受 POST, 避免敏感参数进入访问日志与 Referer ──
+$POST_ONLY = ['sms_send', 'sms_login'];
+if (in_array($action, $POST_ONLY, true) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    header('Allow: POST');
+    log_request($action, [], 405, 0);
+    fail('页面版本过旧，请刷新后重试', 405, ['reason' => 'post_required']);
+}
+
+
 $isAdmin = is_admin();
 
 // ── 1. UA 校验(管理旁路跳过) ──
@@ -329,13 +338,13 @@ try {
         case 'sms_send': {
             // 人机验证(仅发送短信前校验, 检索不受影响)
             if (captcha2_enabled()) {
-                $vp = (string) ($_REQUEST['captcha'] ?? '');
+                $vp = (string) ($_POST['captcha'] ?? '');
                 [$cok, $cmsg] = captcha2_verify($vp);
                 if (!$cok) {
                     fail($cmsg, 400, ['reason' => 'captcha_failed']);
                 }
             }
-            $phone = preg_replace('/\D/', '', (string) ($_GET['phone'] ?? ''));
+            $phone = preg_replace('/\D/', '', (string) ($_POST['phone'] ?? ''));
             if (!phone_valid($phone)) {
                 fail('请输入正确的 11 位手机号', 400);
             }
@@ -356,8 +365,8 @@ try {
 
         // ─────────── 验证码登录(未注册自动注册) ───────────
         case 'sms_login': {
-            $phone = preg_replace('/\D/', '', (string) ($_GET['phone'] ?? ''));
-            $code  = preg_replace('/\D/', '', (string) ($_GET['code'] ?? ''));
+            $phone = preg_replace('/\D/', '', (string) ($_POST['phone'] ?? ''));
+            $code  = preg_replace('/\D/', '', (string) ($_POST['code'] ?? ''));
             if (!phone_valid($phone)) {
                 fail('请输入正确的 11 位手机号', 400);
             }

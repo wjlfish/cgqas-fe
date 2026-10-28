@@ -94,4 +94,13 @@ return [
         'headlesschrome', 'phantomjs', 'puppeteer', 'playwright', 'selenium',
         'masscan', 'nmap', 'zgrab', 'nuclei', 'sqlmap',
     ],
+
+    // ── 告警 (ops/health.php 由 cron 每 5 分钟调用) ──
+    'alert' => [
+        'enable'       => true,
+        'webhook'      => '',      // 机器人地址; 留空则只写 /www/wwwlogs/cgtk-alert.log
+        'kind'         => 'auto',  // auto|wecom|dingtalk|serverchan|telegram|generic
+        'min_interval' => 1800,    // 同类告警最小间隔(秒), 防止刷屏
+        'sms_fail_min' => 3,       // 30 分钟内短信失败请求达到该数量才告警
+    ],
 ];

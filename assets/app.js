@@ -64,13 +64,29 @@
     return false;
   }
 
+  // 含手机号/验证码等敏感参数的动作一律 POST, 避免落进访问日志
+  const POST_ACTIONS = new Set(['sms_send', 'sms_login']);
+
   async function api(action, params = {}) {
     if (Date.now() > tokenExp - 120000) await refreshToken();
-    const qs = new URLSearchParams({ action, ...params });
-    const r = await fetch(`${API}?${qs}`, {
+    const isPost = POST_ACTIONS.has(action);
+    let url = `${API}?action=${encodeURIComponent(action)}`;
+    const opts = {
       headers: { 'X-CG-Token': token, Accept: 'application/json' },
       credentials: 'same-origin',
-    });
+      method: isPost ? 'POST' : 'GET',
+    };
+    if (isPost) {
+      const fd = new FormData();
+      Object.keys(params).forEach((k) => {
+        if (params[k] !== undefined && params[k] !== null) fd.append(k, params[k]);
+      });
+      opts.body = fd;
+    } else {
+      const qs = new URLSearchParams(params);
+      if (qs.toString()) url += '&' + qs;
+    }
+    const r = await fetch(url, opts);
     if (r.status === 401) {
       let j = {};
       try { j = await r.json(); } catch (e) {}

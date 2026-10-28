@@ -41,6 +41,7 @@ api.php ── 路由 / 校验 / 限流 ──► MySQL
 index.php            前端入口(下发令牌、写访问日志)
 api.php              API 路由(search / subjects / stats / detail / refresh)
 feedback.php         问题反馈独立页面
+ops/                 运维脚本(部署到 docroot 之外)
 admin.php            后台管理面板(需 admin_key)
 admin_api.php        后台接口(去重判定/批量删除/反馈状态)
 assets/feedback.js   反馈组件(弹框与独立页共用)
@@ -242,6 +243,35 @@ grep -a 'INSERT INTO feedback' /tmp/bl.txt
 2026-10-28 曾因无条件 `DELETE FROM feedback` 误删 2 条真实数据
 （用户 413 对 #6473 的错题申报、用户 5 的点赞），已通过 binlog 按原 id、
 原时间、原 IP 还原。
+
+### 健康检查与告警
+
+`ops/health.php` 由 cron 每 5 分钟执行，部署在 `/www/wwwroot/cgtk-ops/`（docroot 之外）：
+
+```cron
+*/5 * * * * /www/server/php/81/bin/php /www/wwwroot/cgtk-ops/health.php >/dev/null 2>&1
+```
+
+| 检查 | 告警条件 |
+|---|---|
+| 数据库 | 连接失败 |
+| 短信接口 | 近 30 分钟 `sms_send` 全部 5xx（≥3 次） |
+| 接口错误率 | 近 30 分钟 ≥20 请求且 5xx ≥20% |
+| PHP-FPM | socket 缺失 / master 为 0 |
+| 磁盘 | ≥90%（≥95% 严重） |
+| 站点访问 | 首页非 200 或缺关键内容 |
+| 致命错误 | 近 15 分钟 Fatal |
+
+告警走 `ops/notify.php`，支持企业微信 / 钉钉 / Server酱 / Telegram / 通用 webhook，
+按 URL 自动识别；`webhook` 留空则只写 `/www/wwwlogs/cgtk-alert.log`。
+同一类告警 `min_interval`（默认 30 分钟）内不重复。恢复正常时补发一条「已恢复正常」。
+
+状态写入 `settings` 表，后台顶部显示横幅。
+
+### 敏感参数不走 URL
+
+`sms_send` / `sms_login` 只接受 POST（GET 返回 405 `post_required`），
+手机号、验证码、captcha 参数放在请求体里，不会进入 nginx 访问日志与 Referer。
 
 ### 5xx 留痕
 

@@ -12,13 +12,16 @@ $model = '';
 if ($dev !== 'Desktop' && preg_match('/\(([^)]{1,60})\)/', $ua, $m)) {
     $model = $m[1];
 }
-try {
-    db()->prepare(
-        "INSERT INTO access_logs (ip, user_agent, device_type, device_model, hostname, created_at)
-         VALUES (?,?,?,?,?,NOW())"
-    )->execute([substr($ip, 0, 250), substr($ua, 0, 2000), $dev, substr($model, 0, 200), null]);
-} catch (Throwable $e) {
-    // 日志失败不影响页面
+// 内部健康检查不计入访客统计
+if (strpos($ua, 'cgtk-health/') !== 0) {
+    try {
+        db()->prepare(
+            "INSERT INTO access_logs (ip, user_agent, device_type, device_model, hostname, created_at)
+             VALUES (?,?,?,?,?,NOW())"
+        )->execute([substr($ip, 0, 250), substr($ua, 0, 2000), $dev, substr($model, 0, 200), null]);
+    } catch (Throwable $e) {
+        // 日志失败不影响页面
+    }
 }
 
 $cfgAll = require __DIR__ . '/lib/config.php';
@@ -206,7 +209,7 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/assets/app.js?v=6"></script>
+<script src="/assets/app.js?v=7"></script>
 <script src="/assets/feedback.js?v=7"></script>
 <script>
 (function () {

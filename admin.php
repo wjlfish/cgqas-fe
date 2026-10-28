@@ -61,6 +61,17 @@ if (!isset($TABS[$tab])) {
 $page = max(0, (int) ($_GET['page'] ?? 0));
 $LIM  = 30;
 
+// 健康检查状态 (ops/health.php 每 5 分钟写入)
+$health = ['at' => '', 'state' => '', 'detail' => ''];
+try {
+    $hs = $pdo->query("SELECT k, v FROM settings WHERE k LIKE 'health_last%'")->fetchAll();
+    foreach ($hs as $row) {
+        if ($row['k'] === 'health_last_at')     { $health['at'] = (string) $row['v']; }
+        if ($row['k'] === 'health_last_state')  { $health['state'] = (string) $row['v']; }
+        if ($row['k'] === 'health_last_detail') { $health['detail'] = (string) $row['v']; }
+    }
+} catch (Throwable $e) { /* 忽略 */ }
+
 // 全局计数(各页签都要用到)
 $G = [
     'questions' => (int) $pdo->query("SELECT COUNT(*) FROM questions")->fetchColumn(),
@@ -399,6 +410,15 @@ if ($tab === 'dedupe') {
 .qm-fb{ margin-top:16px; padding:11px 12px; background:var(--paper-2);
   border-left:2px solid var(--seal); font-size:12px; line-height:1.8; color:var(--ink-2) }
 .qm-fb .h{ color:var(--ink-3); font-size:10.5px; letter-spacing:.12em; margin-bottom:5px }
+.healthbar{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
+  margin:18px 0 0; padding:9px 12px; border-left:2px solid var(--rule);
+  background:var(--paper-2); font-size:12px; color:var(--ink-2) }
+.healthbar.ok{ border-left-color:var(--ok) }
+.healthbar.bad{ border-left-color:var(--seal); background:var(--seal-wash) }
+.healthbar .lbl{ font-size:10.5px; letter-spacing:.14em; color:var(--ink-3) }
+.healthbar.bad .lbl{ color:var(--seal) }
+.healthbar .at{ margin-left:auto; color:var(--ink-3); font-size:11px;
+  font-variant-numeric:tabular-nums }
 .adm{padding:8px 0 80px}
 .adm-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
   flex-wrap:wrap;margin:34px 0 4px}
@@ -503,6 +523,19 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
     <h1>站点管理</h1>
     <span class="sub">题库 <?= number_format($G['questions']) ?> 题</span>
   </div>
+
+  <?php if ($health['at'] !== ''): ?>
+    <div class="healthbar <?= $health['state'] === 'bad' ? 'bad' : 'ok' ?>">
+      <span class="lbl"><?= $health['state'] === 'bad' ? '异常' : '正常' ?></span>
+      <span><?= $esc($health['detail']) ?></span>
+      <span class="at">检查于 <?= $esc($health['at']) ?></span>
+    </div>
+  <?php else: ?>
+    <div class="healthbar">
+      <span class="lbl">未检查</span>
+      <span>健康检查尚未运行（cron 每 5 分钟一次）</span>
+    </div>
+  <?php endif; ?>
 
   <nav class="tabs">
     <?php foreach ($TABS as $k => $label): ?>
