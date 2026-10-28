@@ -243,6 +243,18 @@ grep -a 'INSERT INTO feedback' /tmp/bl.txt
 （用户 413 对 #6473 的错题申报、用户 5 的点赞），已通过 binlog 按原 id、
 原时间、原 IP 还原。
 
+### 5xx 留痕
+
+`api.php` 现在会把未捕获异常与致命错误写入 `/www/wwwlogs/cgtk-api-error.log`
+（docroot 之外，不可通过 Web 访问）：
+
+```
+2026-10-28T14:35:12+08:00	[sms_send]	TypeError: ... @ /www/wwwroot/cgtk.wjlo.cc/lib/sms.php:88	1.2.3.4	Mozilla/5.0 ...
+```
+
+同时用 `register_shutdown_function` 兜住 `E_ERROR / E_PARSE / E_CORE_ERROR / E_COMPILE_ERROR`，
+PHP-FPM 白屏或上游 502 时能留下现场。
+
 ## 安全与反爬
 
 站点是公开的只读检索服务，但题库不能让人整库拖走。为此做了分层设计：

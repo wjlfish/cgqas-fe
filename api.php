@@ -126,6 +126,22 @@ if (in_array($action, $NEED_AUTH, true) && $AUTH_REQUIRED && !$me) {
     fail('请先完成手机号验证', 401, ['reason' => 'login_required']);
 }
 
+// ── 错误留痕: 记录未捕获异常与致命错误, 便于排查 5xx ──
+function api_log_error(string $action, string $msg): void
+{
+    $line = date('c') . "	[" . $action . "]	" . $msg . "	"
+          . ($_SERVER['REMOTE_ADDR'] ?? '-') . "	"
+          . mb_substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 80) . "\n";
+    @file_put_contents('/www/wwwlogs/cgtk-api-error.log', $line, FILE_APPEND | LOCK_EX);
+}
+
+register_shutdown_function(static function () use (&$action): void {
+    $e = error_get_last();
+    if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        api_log_error((string) $action, 'FATAL ' . $e['message'] . ' @ ' . $e['file'] . ':' . $e['line']);
+    }
+});
+
 $pdo = db();
 $out = null;
 $status = 200;
@@ -602,6 +618,8 @@ try {
     }
 } catch (Throwable $e) {
     $status = 500;
+    api_log_error((string) $action, get_class($e) . ': ' . $e->getMessage()
+        . ' @ ' . $e->getFile() . ':' . $e->getLine());
     $out = ['ok' => false, 'error' => 'server error'];
 }
 
