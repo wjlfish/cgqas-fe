@@ -61,6 +61,138 @@ if ($act === 'bulk_legacy') {
     }
 }
 
+
+/* ── 错题处理: 取题目详情 ── */
+if ($act === 'q_get') {
+    $qid = (int) ($_POST['id'] ?? 0);
+    if ($qid <= 0) {
+        fail('invalid id', 400);
+    }
+    $st = $pdo->prepare(
+        "SELECT q.id, q.type, q.stem, q.options, q.answer, q.source,
+                GROUP_CONCAT(s.name ORDER BY s.name SEPARATOR '、') AS subjects
+         FROM questions q
+         LEFT JOIN question_subjects qs ON qs.question_id = q.id
+         LEFT JOIN subjects s ON s.id = qs.subject_id
+         WHERE q.id = ?
+         GROUP BY q.id"
+    );
+    $st->execute([$qid]);
+    $q = $st->fetch();
+    if (!$q) {
+        fail('题目不存在', 404);
+    }
+    $opts = null;
+    if (!empty($q['options'])) {
+        $opts = json_decode((string) $q['options'], true);
+    }
+    $fb = null;
+    $fid = (int) ($_POST['fb_id'] ?? 0);
+    if ($fid > 0) {
+        $fst = $pdo->prepare(
+            "SELECT f.id, f.reason, f.content, f.contact, f.created_at, u.phone
+             FROM feedback f LEFT JOIN users u ON u.id = f.user_id
+             WHERE f.id = ?"
+        );
+        $fst->execute([$fid]);
+        $fb = $fst->fetch() ?: null;
+    }
+    json_out([
+        'ok' => true,
+        'q'  => [
+            'id'       => (int) $q['id'],
+            'type'     => (string) $q['type'],
+            'stem'     => (string) $q['stem'],
+            'options'  => $opts,
+            'answer'   => (string) $q['answer'],
+            'source'   => (string) $q['source'],
+            'subjects' => (string) ($q['subjects'] ?? ''),
+        ],
+        'fb' => $fb,
+    ]);
+}
+
+/* ── 错题处理: 保存答案 ── */
+if ($act === 'q_save') {
+    $qid = (int) ($_POST['id'] ?? 0);
+    $ans = trim((string) ($_POST['answer'] ?? ''));
+    $fid = (int) ($_POST['fb_id'] ?? 0);
+    if ($qid <= 0) {
+        fail('invalid id', 400);
+    }
+    if ($ans === '') {
+        fail('答案不能为空', 400);
+    }
+    if (mb_strlen($ans) > 500) {
+        fail('答案过长（最多 500 字）', 400);
+    }
+    $st = $pdo->prepare('SELECT type, answer FROM questions WHERE id = ?');
+    $st->execute([$qid]);
+    $row = $st->fetch();
+    if (!$row) {
+        fail('题目不存在', 404);
+    }
+    $type = (string) $row['type'];
+    $old  = (string) $row['answer'];
+
+    if ($type === '判断') {
+        $map = ['对' => '正确', '错' => '错误', 'true' => '正确', 'false' => '错误',
+                'T' => '正确', 'F' => '错误'];
+        if (isset($map[$ans])) {
+            $ans = $map[$ans];
+        }
+        if (!in_array($ans, ['正确', '错误'], true)) {
+            fail('判断题答案只能是「正确」或「错误」', 400);
+        }
+    } elseif ($type === '单选' || $type === '多选') {
+        $ans = strtoupper(preg_replace('/[^A-Za-z]/', '', $ans) ?? '');
+        if ($ans === '') {
+            fail('选择题答案应为选项字母，如 A / AB', 400);
+        }
+        if ($type === '单选' && mb_strlen($ans) > 1) {
+            fail('单选题答案只能是一个字母', 400);
+        }
+        $letters = array_values(array_unique(str_split($ans)));
+        sort($letters);
+        $ans = implode('', $letters);
+
+        $st2 = $pdo->prepare('SELECT options FROM questions WHERE id = ?');
+        $st2->execute([$qid]);
+        $raw = (string) $st2->fetchColumn();
+        if ($raw !== '') {
+            $opts = json_decode($raw, true);
+            if (is_array($opts)) {
+                $keys = [];
+                foreach ($opts as $o) {
+                    if (isset($o['key'])) {
+                        $keys[] = strtoupper((string) $o['key']);
+                    }
+                }
+                foreach ($letters as $L) {
+                    if ($keys && !in_array($L, $keys, true)) {
+                        fail('选项 ' . $L . ' 不存在', 400);
+                    }
+                }
+            }
+        }
+    }
+
+    $pdo->beginTransaction();
+    try {
+        $pdo->prepare('UPDATE questions SET answer = ? WHERE id = ?')->execute([$ans, $qid]);
+        if ($fid > 0) {
+            $pdo->prepare(
+                'UPDATE feedback SET status = 1, admin_note = ? WHERE id = ?'
+            )->execute([mb_substr('原答案：' . $old . ' → 新答案：' . $ans, 0, 240), $fid]);
+        }
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        fail('db error', 500);
+    }
+    json_out(['ok' => true, 'old' => $old, 'answer' => $ans]);
+}
+
 if ($act === 'fb_status') {
     $id  = (int) ($_POST['id'] ?? 0);
     $stt = (int) ($_POST['status'] ?? 0);

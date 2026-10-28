@@ -328,6 +328,56 @@ if ($tab === 'dedupe') {
 .fb-ok{ font-size:11.5px; letter-spacing:.04em; color:var(--ink-2);
   border:1px solid var(--rule); padding:2px 8px; margin-right:5px; transition:.2s var(--ease) }
 .fb-ok:hover{ border-color:var(--ink); color:var(--ink) }
+.qmodal{ position:fixed; inset:0; z-index:400; display:grid; place-items:center; padding:20px }
+.qmodal[hidden]{ display:none }
+.qmodal-mask{ position:absolute; inset:0; background:rgba(23,21,15,.42) }
+.qmodal-card{ position:relative; width:min(760px,100%); max-height:88vh; display:flex;
+  flex-direction:column; background:var(--paper); border:1px solid var(--ink);
+  box-shadow:0 24px 60px -20px rgba(23,21,15,.35) }
+.qmodal-head{ display:flex; align-items:center; gap:10px; padding:12px 16px;
+  border-bottom:1px solid var(--rule); flex:0 0 auto }
+.qmodal-head>span{ font-size:13px; letter-spacing:.1em }
+.qmodal-close{ margin-left:auto; font-size:20px; line-height:1; color:var(--ink-3) }
+.qmodal-close:hover{ color:var(--ink) }
+.qmodal-body{ overflow-y:auto; padding:16px; flex:1 1 auto }
+.qmodal-foot{ display:flex; align-items:center; gap:10px; padding:12px 16px;
+  border-top:1px solid var(--rule); flex:0 0 auto; flex-wrap:wrap }
+.qmodal-foot .qsave{ height:34px; padding:0 18px; background:var(--ink); color:var(--paper);
+  font-size:12.5px; letter-spacing:.06em }
+.qmodal-foot .qsave:hover{ background:var(--seal) }
+.qmodal-foot .qsave:disabled{ opacity:.5 }
+.qmodal-foot .qcancel{ height:34px; padding:0 16px; border:1px solid var(--rule);
+  font-size:12.5px; color:var(--ink-2) }
+.qmsg{ font-size:12px; color:var(--seal) }
+.qm-meta{ display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  font-size:11px; color:var(--ink-3); margin-bottom:10px; letter-spacing:.06em }
+.qm-stem{ font-family:"Songti SC","Source Han Serif SC",STSong,SimSun,serif;
+  font-size:15.5px; line-height:1.75; color:var(--ink); margin:0 0 12px;
+  white-space:pre-wrap; word-break:break-word }
+.qm-opts{ list-style:none; margin:0 0 14px; padding:0; display:flex;
+  flex-direction:column; gap:5px }
+.qm-opts li{ display:flex; gap:8px; font-size:13px; line-height:1.7; color:var(--ink-2) }
+.qm-opts .k{ flex:0 0 auto; color:var(--seal); font-weight:600;
+  font-variant-numeric:tabular-nums }
+.qm-lab{ font-size:10.5px; letter-spacing:.14em; color:var(--ink-3);
+  margin:16px 0 7px; padding-top:12px; border-top:1px solid var(--rule-soft) }
+.qm-ans-row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap }
+.qm-ans-row input,.qm-ans-row textarea{
+  flex:1 1 220px; min-width:0; height:36px; padding:0 10px; border:1px solid var(--rule);
+  background:var(--paper-2); color:var(--ink); font:inherit; font-size:13px; outline:none }
+.qm-ans-row textarea{ height:auto; min-height:76px; padding:9px 10px; line-height:1.7;
+  resize:vertical }
+.qm-ans-row input:focus,.qm-ans-row textarea:focus{ border-color:var(--seal); background:var(--paper) }
+.qm-chips{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:9px }
+.qm-chip{ font-size:11.5px; padding:3px 10px; border:1px solid var(--rule);
+  color:var(--ink-3); transition:.2s var(--ease) }
+.qm-chip:hover{ border-color:var(--ink-3); color:var(--ink-2) }
+.qm-chip.on{ border-color:var(--seal); color:var(--seal) }
+.qm-old{ font-size:12.5px; color:var(--ink-2) }
+.qm-old b{ color:var(--seal); font-weight:600 }
+.qm-fb{ margin-top:16px; padding:11px 12px; background:var(--paper-2);
+  border-left:2px solid var(--seal); font-size:12px; line-height:1.8; color:var(--ink-2) }
+.qm-fb .h{ color:var(--ink-3); font-size:10.5px; letter-spacing:.12em; margin-bottom:5px }
 .adm{padding:8px 0 80px}
 .adm-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
   flex-wrap:wrap;margin:34px 0 4px}
@@ -716,10 +766,20 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
              : '<span class="tag">已忽略</span>') ?>
         </td>
         <td class="num">
+          <?php $isWrong = ($r['kind'] === 'wrong' && (int) $r['question_id'] > 0); ?>
           <?php if ((int) $r['status'] === 0): ?>
-            <button class="fb-ok" data-id="<?= (int) $r['id'] ?>" data-st="1" type="button">处理</button>
+            <?php if ($isWrong): ?>
+              <button class="fb-ok fb-fix" data-id="<?= (int) $r['id'] ?>"
+                      data-qid="<?= (int) $r['question_id'] ?>" type="button">查看并改答案</button>
+            <?php else: ?>
+              <button class="fb-ok" data-id="<?= (int) $r['id'] ?>" data-st="1" type="button">处理</button>
+            <?php endif; ?>
             <button class="fb-ok" data-id="<?= (int) $r['id'] ?>" data-st="2" type="button">忽略</button>
           <?php else: ?>
+            <?php if ($isWrong): ?>
+              <button class="fb-ok fb-fix" data-id="<?= (int) $r['id'] ?>"
+                      data-qid="<?= (int) $r['question_id'] ?>" type="button">查看/改答案</button>
+            <?php endif; ?>
             <button class="fb-ok" data-id="<?= (int) $r['id'] ?>" data-st="0" type="button">重开</button>
           <?php endif; ?>
         </td>
@@ -808,6 +868,22 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
 <?php endif; ?>
 </main>
 
+<div class="qmodal" id="qModal" hidden>
+  <div class="qmodal-mask" data-qclose="1"></div>
+  <div class="qmodal-card" role="dialog" aria-modal="true" aria-labelledby="qmTitle">
+    <div class="qmodal-head">
+      <span id="qmTitle">题目详情</span>
+      <button class="qmodal-close" type="button" data-qclose="1" aria-label="关闭">×</button>
+    </div>
+    <div class="qmodal-body" id="qmBody"><p class="empty">加载中…</p></div>
+    <div class="qmodal-foot">
+      <button class="qsave" id="qmSave" type="button">保存答案并标记已处理</button>
+      <button class="qcancel" type="button" data-qclose="1">取消</button>
+      <span class="qmsg" id="qmMsg"></span>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 (function () {
@@ -848,7 +924,165 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
     });
   });
 
-  document.querySelectorAll('.fb-ok').forEach(function (b) {
+  /* ── 错题处理弹框 ── */
+  var qm = document.getElementById('qModal');
+  var qmBody = document.getElementById('qmBody');
+  var qmSave = document.getElementById('qmSave');
+  var qmMsg = document.getElementById('qmMsg');
+  var QS = { qid: 0, fid: 0, type: '' };
+
+  function escQ(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function closeQ() { qm.hidden = true; }
+
+  function renderQ(d) {
+    var q = d.q, fb = d.fb;
+    QS.qid = q.id; QS.fid = (fb && fb.id) ? fb.id : 0; QS.type = q.type;
+    var opts = '';
+    if (q.options && q.options.length) {
+      opts = '<ul class="qm-opts">' + q.options.map(function (o) {
+        return '<li><span class="k">' + escQ(o.key || '') + '</span><span>' +
+          escQ(o.text || '') + '</span></li>';
+      }).join('') + '</ul>';
+    }
+    var chips = '';
+    if (q.type === '判断') {
+      chips = ['正确', '错误'].map(function (v) {
+        return '<button type="button" class="qm-chip" data-val="' + v + '">' + v + '</button>';
+      }).join('');
+    } else if (q.type === '单选' || q.type === '多选') {
+      var keys = (q.options || []).map(function (o) { return o.key; }).filter(Boolean);
+      if (!keys.length) keys = ['A', 'B', 'C', 'D'];
+      chips = keys.map(function (k) {
+        return '<button type="button" class="qm-chip" data-val="' + escQ(k) + '">' + escQ(k) + '</button>';
+      }).join('');
+    }
+    var long = (q.type === '填空' || q.type === '问答');
+    var editor = long
+      ? '<textarea id="qmAns">' + escQ(q.answer) + '</textarea>'
+      : '<input id="qmAns" type="text" value="' + escQ(q.answer) + '">';
+
+    var fbh = '';
+    if (fb) {
+      fbh = '<div class="qm-fb"><div class="h">申报信息</div>' +
+        '用户：' + escQ(fb.phone || '—') + '　时间：' + escQ(fb.created_at) +
+        (fb.reason ? '<br>问题类型：' + escQ(fb.reason) : '') +
+        (fb.content ? '<br>补充：' + escQ(fb.content) : '') +
+        (fb.contact ? '<br>联系方式：' + escQ(fb.contact) : '') +
+        '</div>';
+    }
+
+    qmBody.innerHTML =
+      '<div class="qm-meta"><span class="tag">' + escQ(q.type) + '</span>' +
+        (q.subjects ? '<span>' + escQ(q.subjects) + '</span>' : '') +
+        (q.source === 'legacy' ? '<span class="tag">旧库</span>' : '') +
+        '<span>#' + q.id + '</span></div>' +
+      '<p class="qm-stem">' + escQ(q.stem) + '</p>' +
+      opts +
+      '<div class="qm-lab">当前答案</div>' +
+      '<p class="qm-old" style="margin:0 0 10px"><b>' + escQ(q.answer) + '</b></p>' +
+      '<div class="qm-lab">修改为</div>' +
+      (chips ? '<div class="qm-chips">' + chips + '</div>' : '') +
+      '<div class="qm-ans-row">' + editor + '</div>' +
+      fbh;
+
+    function syncChips() {
+      var inp = document.getElementById('qmAns');
+      if (!inp) return;
+      var v = inp.value.toUpperCase();
+      qmBody.querySelectorAll('.qm-chip').forEach(function (x) {
+        var kv = x.dataset.val.toUpperCase();
+        var on = QS.type === '多选' ? v.indexOf(kv) >= 0 : v === kv;
+        x.classList.toggle('on', on);
+      });
+    }
+
+    qmBody.querySelectorAll('.qm-chip').forEach(function (c) {
+      c.addEventListener('click', function () {
+        var inp = document.getElementById('qmAns');
+        if (QS.type === '多选') {
+          var cur = inp.value.toUpperCase().replace(/[^A-Z]/g, '');
+          var v = c.dataset.val.toUpperCase();
+          inp.value = cur.indexOf(v) >= 0
+            ? cur.split('').filter(function (x) { return x !== v; }).join('')
+            : (cur + v).split('').sort().join('');
+        } else {
+          inp.value = c.dataset.val;
+        }
+        syncChips();
+      });
+    });
+
+    var ansInp = document.getElementById('qmAns');
+    if (ansInp) {
+      ansInp.addEventListener('input', syncChips);
+      ansInp.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); qmSave.click(); }
+      });
+    }
+    syncChips();
+    qmMsg.textContent = '';
+  }
+
+  async function openQ(qid, fid) {
+    QS.qid = qid; QS.fid = fid;
+    qm.hidden = false;
+    qmBody.innerHTML = '<p class="empty">加载中…</p>';
+    qmSave.disabled = true;
+    try {
+      var fd = new FormData();
+      fd.append('action', 'q_get');
+      fd.append('id', qid);
+      fd.append('fb_id', fid || 0);
+      var r = await fetch('/admin_api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+      var j = await r.json();
+      if (!j.ok) throw new Error(j.error || '加载失败');
+      renderQ(j);
+      qmSave.disabled = false;
+    } catch (e) {
+      qmBody.innerHTML = '<p class="empty">' + escQ(e.message) + '</p>';
+    }
+  }
+
+  qmSave.addEventListener('click', async function () {
+    var inp = document.getElementById('qmAns');
+    if (!inp) return;
+    var val = inp.value.trim();
+    if (!val) { qmMsg.textContent = '答案不能为空'; return; }
+    qmSave.disabled = true;
+    qmMsg.textContent = '保存中…';
+    try {
+      var fd = new FormData();
+      fd.append('action', 'q_save');
+      fd.append('id', QS.qid);
+      fd.append('answer', val);
+      fd.append('fb_id', QS.fid || 0);
+      var r = await fetch('/admin_api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+      var j = await r.json();
+      if (!j.ok) throw new Error(j.error || '保存失败');
+      qmMsg.textContent = '已保存';
+      setTimeout(function () { closeQ(); location.reload(); }, 600);
+    } catch (e) {
+      qmMsg.textContent = e.message;
+      qmSave.disabled = false;
+    }
+  });
+
+  qm.querySelectorAll('[data-qclose]').forEach(function (el) {
+    el.addEventListener('click', closeQ);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !qm.hidden) closeQ();
+  });
+
+  document.querySelectorAll('.fb-fix').forEach(function (b) {
+    b.addEventListener('click', function () { openQ(b.dataset.qid, b.dataset.id); });
+  });
+
+  document.querySelectorAll('.fb-ok:not(.fb-fix)').forEach(function (b) {
     b.addEventListener('click', async function () {
       b.disabled = true;
       try {
