@@ -61,6 +61,16 @@ if ($act === 'bulk_legacy') {
     }
 }
 
+if ($act === 'fb_status') {
+    $id  = (int) ($_POST['id'] ?? 0);
+    $stt = (int) ($_POST['status'] ?? 0);
+    if ($id <= 0 || !in_array($stt, [0, 1, 2], true)) {
+        fail('invalid params', 400);
+    }
+    $pdo->prepare('UPDATE feedback SET status = ? WHERE id = ?')->execute([$stt, $id]);
+    json_out(['ok' => true]);
+}
+
 if ($act !== 'decide') {
     fail('unknown action', 400);
 }

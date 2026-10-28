@@ -138,3 +138,25 @@ CREATE TABLE IF NOT EXISTS search_logs (
   PRIMARY KEY (id),
   KEY idx_user (user_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ═══════════════════════════════════════════════════════════
+-- 问题反馈 (错题申报 / Bug 反馈 / 点赞 / 评论)
+-- ═══════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS `feedback` (
+  `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id`     INT UNSIGNED    NOT NULL,
+  `kind`        ENUM('wrong','bug','like','comment') NOT NULL,
+  `question_id` INT UNSIGNED    DEFAULT NULL,
+  `reason`      VARCHAR(24)     NOT NULL DEFAULT '',
+  `content`     TEXT            DEFAULT NULL,
+  `contact`     VARCHAR(64)     NOT NULL DEFAULT '',
+  `ip`          VARBINARY(16)   DEFAULT NULL,
+  `ua`          VARCHAR(255)    NOT NULL DEFAULT '',
+  `status`      TINYINT         NOT NULL DEFAULT 0 COMMENT '0待处理 1已处理 2忽略',
+  `admin_note`  VARCHAR(255)    NOT NULL DEFAULT '',
+  `created_at`  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `k_user_kind_time` (`user_id`,`kind`,`created_at`),
+  KEY `k_status_time`    (`status`,`created_at`),
+  KEY `k_question`       (`question_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

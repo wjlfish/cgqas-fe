@@ -52,6 +52,7 @@ $TABS = [
     'searches' => '检索记录',
     'sms'      => '短信记录',
     'limits'   => '限流封禁',
+    'feedback' => '反馈',
     'dedupe'   => '去重审阅',
 ];
 if (!isset($TABS[$tab])) {
@@ -121,6 +122,8 @@ if ($tab === 'overview') {
         'subjects'     => $one("SELECT COUNT(*) FROM subjects"),
         'dedupe'       => 0,
         'banned'       => $one("SELECT COUNT(*) FROM rate_limits WHERE blocked_until > UNIX_TIMESTAMP()"),
+        'fb_pending'   => $one("SELECT COUNT(*) FROM feedback WHERE status = 0"),
+        'fb_today'     => $one("SELECT COUNT(*) FROM feedback WHERE created_at >= CURDATE()"),
     ];
     $ov['questions'] = $G['questions'];
     $ov['dedupe']    = $G['pending'];
@@ -237,6 +240,30 @@ if ($tab === 'limits') {
     )->fetchAll();
 }
 
+if ($tab === 'feedback') {
+    $fkind = (string) ($_GET['kind'] ?? '');
+    $fstat = (string) ($_GET['st'] ?? '');
+    $w = ['1=1'];
+    $par = [];
+    if ($fkind !== '') { $w[] = 'f.kind = ?'; $par[] = $fkind; }
+    if ($fstat !== '') { $w[] = 'f.status = ?'; $par[] = (int) $fstat; }
+    $where = implode(' AND ', $w);
+    $st = $pdo->prepare("SELECT COUNT(*) FROM feedback f WHERE $where");
+    $st->execute($par);
+    $total = (int) $st->fetchColumn();
+    $st = $pdo->prepare(
+        "SELECT f.id, f.kind, f.question_id, f.reason, f.content, f.contact,
+                f.status, f.created_at, u.phone
+         FROM feedback f LEFT JOIN users u ON u.id = f.user_id
+         WHERE $where ORDER BY f.status ASC, f.id DESC LIMIT $LIM OFFSET " . ($page * $LIM)
+    );
+    $st->execute($par);
+    $rows = $st->fetchAll();
+    $fkinds = $pdo->query(
+        "SELECT kind, COUNT(*) n FROM feedback GROUP BY kind"
+    )->fetchAll();
+}
+
 /* ── 去重 ── */
 $CATNAME = [
     'near_diff'      => '① 近同题·答案不同',
@@ -289,6 +316,18 @@ if ($tab === 'dedupe') {
 <title>后台管理</title>
 <link rel="stylesheet" href="/assets/style.css?v=5">
 <style>
+.masthead{ position:sticky; top:0; z-index:60; background:var(--paper);
+  border-bottom:1px solid var(--rule-soft); height:48px }
+.masthead .shell{ display:flex; align-items:center; gap:20px; height:100% }
+.mark{ display:flex; align-items:baseline; gap:7px; text-decoration:none;
+  font-family:"Songti SC","Source Han Serif SC",STSong,SimSun,serif;
+  font-weight:600; font-size:14.5px; color:var(--ink); letter-spacing:.02em }
+.mark .dot{ color:var(--rule); font-weight:400 }
+.mark em{ font-style:normal; font-size:9.5px; letter-spacing:.2em; color:var(--ink-3) }
+.adm .nav{ margin-left:auto }
+.fb-ok{ font-size:11.5px; letter-spacing:.04em; color:var(--ink-2);
+  border:1px solid var(--rule); padding:2px 8px; margin-right:5px; transition:.2s var(--ease) }
+.fb-ok:hover{ border-color:var(--ink); color:var(--ink) }
 .adm{padding:8px 0 80px}
 .adm-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
   flex-wrap:wrap;margin:34px 0 4px}
@@ -381,7 +420,7 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
 </head>
 <body>
 <header class="masthead"><div class="shell">
-  <a class="mark" href="/admin.php"><span>后台</span><span class="dot">·</span><em>管理</em></a>
+  <a class="mark" href="/admin.php"><span>创高题库</span><span class="dot">·</span><em>后台</em></a>
   <nav class="nav">
     <a class="nav-link" href="/">前台</a>
     <a class="nav-link" href="/admin.php?logout=1">退出</a>
@@ -421,6 +460,8 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
     <div class="card"><div class="n"><?= number_format($ov['sms_today']) ?></div><div class="l">今日短信</div></div>
     <div class="card<?= $ov['banned'] > 0 ? ' seal' : '' ?>"><div class="n"><?= number_format($ov['banned']) ?></div><div class="l">当前封禁</div></div>
     <div class="card<?= $ov['dedupe'] > 0 ? ' seal' : '' ?>"><div class="n"><?= number_format($ov['dedupe']) ?></div><div class="l">待审重复</div></div>
+    <div class="card<?= $ov['fb_pending'] > 0 ? ' seal' : '' ?>"><div class="n"><?= number_format($ov['fb_pending']) ?></div><div class="l">待处理反馈</div></div>
+    <div class="card"><div class="n"><?= number_format($ov['fb_today']) ?></div><div class="l">今日反馈</div></div>
   </div>
 
   <div class="sec"><h2>用量最高的用户</h2><span class="meta">按已用次数排序</span></div>
@@ -632,6 +673,63 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
     <?php if (!$budget): ?><tr><td colspan="5" class="empty">暂无数据</td></tr><?php endif; ?>
   </table></div>
 
+<?php elseif ($tab === 'feedback'): ?>
+
+  <form class="filt" method="get">
+    <input type="hidden" name="tab" value="feedback">
+    <select name="kind">
+      <option value="">全部类型</option>
+      <?php foreach ($fkinds as $k): ?>
+        <option value="<?= $esc($k['kind']) ?>" <?= (($_GET['kind'] ?? '') === $k['kind']) ? 'selected' : '' ?>>
+          <?= $esc(['wrong'=>'错题申报','bug'=>'Bug 反馈','like'=>'点赞','comment'=>'评论'][$k['kind']] ?? $k['kind']) ?>
+          (<?= (int) $k['n'] ?>)
+        </option>
+      <?php endforeach; ?>
+    </select>
+    <select name="st">
+      <option value="">全部状态</option>
+      <option value="0" <?= (($_GET['st'] ?? '') === '0') ? 'selected' : '' ?>>待处理</option>
+      <option value="1" <?= (($_GET['st'] ?? '') === '1') ? 'selected' : '' ?>>已处理</option>
+      <option value="2" <?= (($_GET['st'] ?? '') === '2') ? 'selected' : '' ?>>已忽略</option>
+    </select>
+    <button type="submit">筛选</button>
+    <span class="meta">共 <?= number_format($total) ?> 条</span>
+  </form>
+  <div class="tw"><table>
+    <tr><th>时间</th><th>类型</th><th>用户</th><th>题目</th><th>问题/内容</th>
+        <th>联系方式</th><th>状态</th><th>操作</th></tr>
+    <?php foreach ($rows as $r):
+      $kn = ['wrong'=>'错题申报','bug'=>'Bug','like'=>'点赞','comment'=>'评论'][$r['kind']] ?? $r['kind']; ?>
+      <tr>
+        <td class="num"><?= $esc($r['created_at']) ?></td>
+        <td><?= $esc($kn) ?></td>
+        <td class="mono"><?= $esc($r['phone'] ?? '—') ?></td>
+        <td class="num"><?= $r['question_id'] ? '#' . (int) $r['question_id'] : '—' ?></td>
+        <td style="max-width:320px">
+          <?php if ($r['reason'] !== ''): ?><span class="tag bad"><?= $esc($r['reason']) ?></span> <?php endif; ?>
+          <span style="color:var(--ink-2)"><?= $esc(mb_substr((string) $r['content'], 0, 80)) ?></span>
+        </td>
+        <td class="mono"><?= $esc($r['contact']) ?></td>
+        <td>
+          <?= (int) $r['status'] === 0 ? '<span class="tag bad">待处理</span>'
+             : ((int) $r['status'] === 1 ? '<span class="tag ok">已处理</span>'
+             : '<span class="tag">已忽略</span>') ?>
+        </td>
+        <td class="num">
+          <?php if ((int) $r['status'] === 0): ?>
+            <button class="fb-ok" data-id="<?= (int) $r['id'] ?>" data-st="1" type="button">处理</button>
+            <button class="fb-ok" data-id="<?= (int) $r['id'] ?>" data-st="2" type="button">忽略</button>
+          <?php else: ?>
+            <button class="fb-ok" data-id="<?= (int) $r['id'] ?>" data-st="0" type="button">重开</button>
+          <?php endif; ?>
+        </td>
+      </tr>
+    <?php endforeach; ?>
+    <?php if (!$rows): ?><tr><td colspan="8" class="empty">暂无反馈</td></tr><?php endif; ?>
+  </table></div>
+  <?= nav('feedback', $page, (int) ceil($total / $LIM),
+          ['kind' => $_GET['kind'] ?? '', 'st' => $_GET['st'] ?? '']) ?>
+
 <?php elseif ($tab === 'dedupe'): ?>
 
   <div class="sec"><h2>重复题审阅</h2>
@@ -747,6 +845,22 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
           btn.disabled = false;
         }
       });
+    });
+  });
+
+  document.querySelectorAll('.fb-ok').forEach(function (b) {
+    b.addEventListener('click', async function () {
+      b.disabled = true;
+      try {
+        const fd = new FormData();
+        fd.append('action', 'fb_status');
+        fd.append('id', b.dataset.id);
+        fd.append('status', b.dataset.st);
+        const r = await fetch('/admin_api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.error || '失败');
+        location.reload();
+      } catch (e) { toast(e.message); b.disabled = false; }
     });
   });
 

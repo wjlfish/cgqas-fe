@@ -39,7 +39,7 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <meta name="description" content="四川大学创高体育理论考试题库检索：按关键词、科目、题型查找题目与标准答案">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23F5F3ED'/><text x='16' y='23' font-size='18' text-anchor='middle' fill='%23B03A2E' font-family='serif'>题</text></svg>">
-<link rel="stylesheet" href="/assets/style.css?v=4">
+<link rel="stylesheet" href="/assets/style.css?v=7">
 <?php if ($cap2On): ?>
 <script>
   window.AliyunCaptchaConfig = {
@@ -159,6 +159,8 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
       <span>最后更新 <b id="footUpdated">—</b></span>
     </p>
     <p class="foot-sign">
+      <a href="/feedback.php">问题反馈</a>
+      <span class="dot">·</span>
       <a href="https://github.com/wjlfish" target="_blank" rel="noopener noreferrer">初音过去<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"></path></svg></a>
     </p>
   </div>
@@ -186,7 +188,62 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
   </div>
 </div>
 
+<!-- ══ 反馈: 右下角 ══ -->
+<button class="fb-fab" id="fbFab" type="button" aria-label="问题反馈" aria-expanded="false" aria-controls="fbPop">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.3 9.3 0 0 1-3.2-.6L3.5 20.5l1.2-4.3A8.4 8.4 0 0 1 3.6 11.5a8.4 8.4 0 0 1 8.4-8.4 8.4 8.4 0 0 1 9 8.4z"></path>
+  </svg>
+  <span>反馈</span>
+</button>
+<div class="fb-pop" id="fbPop" hidden role="dialog" aria-modal="false" aria-labelledby="fbPopTitle">
+  <div class="fb-pop-head">
+    <span id="fbPopTitle">问题反馈</span>
+    <a class="fb-pop-more" href="/feedback.php" target="_blank" rel="noopener">独立页面 ↗</a>
+    <button class="fb-pop-close" id="fbPopClose" type="button" aria-label="关闭">×</button>
+  </div>
+  <div class="fb-pop-body" id="fbRoot"></div>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/assets/app.js?v=4"></script>
+<script src="/assets/app.js?v=6"></script>
+<script src="/assets/feedback.js?v=3"></script>
+<script>
+(function () {
+  var fab = document.getElementById('fbFab');
+  var pop = document.getElementById('fbPop');
+  var closeBtn = document.getElementById('fbPopClose');
+  var mounted = false;
+  if (!fab || !pop) return;
+  function open() {
+    if (!mounted) {
+      if (window.CGFB) window.CGFB.mount(document.getElementById('fbRoot'), 'panel');
+      mounted = true;
+    }
+    pop.hidden = false;
+    fab.setAttribute('aria-expanded', 'true');
+    fab.classList.add('is-open');
+    requestAnimationFrame(function () { pop.classList.add('is-on'); });
+  }
+  function close() {
+    pop.classList.remove('is-on');
+    fab.setAttribute('aria-expanded', 'false');
+    fab.classList.remove('is-open');
+    setTimeout(function () { pop.hidden = true; }, 180);
+  }
+  fab.addEventListener('click', function () {
+    if (pop.hidden) open(); else close();
+  });
+  closeBtn.addEventListener('click', close);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !pop.hidden) close();
+  });
+  document.addEventListener('click', function (e) {
+    if (pop.hidden) return;
+    if (pop.contains(e.target) || fab.contains(e.target)) return;
+    close();
+  });
+})();
+</script>
 </body>
 </html>

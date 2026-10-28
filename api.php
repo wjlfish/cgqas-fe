@@ -119,9 +119,38 @@ if (in_array($action, $NEED_LOGIN, true) && $AUTH_REQUIRED) {
     $me['limit'] = $limit;
 }
 
+// ── 4.6 反馈类: 只需登录, 不消耗搜题额度 ──
+$NEED_AUTH = ['feedback_submit', 'feedback_like', 'feedback_comment'];
+if (in_array($action, $NEED_AUTH, true) && $AUTH_REQUIRED && !$me) {
+    log_request($action, $_GET, 401, (int) ((microtime(true) - $t0) * 1000));
+    fail('请先完成手机号验证', 401, ['reason' => 'login_required']);
+}
+
 $pdo = db();
 $out = null;
 $status = 200;
+
+
+/** 最新评论(带脱敏昵称) */
+function fb_comments(PDO $pdo, int $limit = 20): array
+{
+    $st = $pdo->query(
+        "SELECT f.content, f.created_at, u.phone
+         FROM feedback f JOIN users u ON u.id = f.user_id
+         WHERE f.kind = 'comment'
+         ORDER BY f.id DESC LIMIT $limit"
+    );
+    $rows = $st->fetchAll();
+    $out  = [];
+    foreach ($rows as $r) {
+        $out[] = [
+            'content' => $r['content'],
+            'name'    => phone_mask((string) $r['phone']),
+            'at'      => substr((string) $r['created_at'], 5, 11),
+        ];
+    }
+    return $out;
+}
 
 try {
     switch ($action) {
@@ -393,6 +422,165 @@ try {
             $r['id'] = (int) $r['id'];
             $r['options'] = $r['options'] ? json_decode($r['options'], true) : [];
             $out = ['ok' => true, 'item' => $r];
+            break;
+        }
+
+        // ─────────── 反馈: 提交 ───────────
+        case 'feedback_submit': {
+            $kind    = (string) ($_POST['kind'] ?? '');
+            $content = trim((string) ($_POST['content'] ?? ''));
+            $contact = mb_substr(trim((string) ($_POST['contact'] ?? '')), 0, 64);
+            $reason  = (string) ($_POST['reason'] ?? '');
+            $qid     = (int) ($_POST['question_id'] ?? 0);
+
+            if (!in_array($kind, ['wrong', 'bug'], true)) {
+                fail('反馈类型不正确', 400, ['reason' => 'bad_kind']);
+            }
+            if (mb_strlen($content) > 1000) {
+                fail('内容最多 1000 字', 400, ['reason' => 'too_long']);
+            }
+            if ($kind === 'bug' && mb_strlen($content) < 5) {
+                fail('请描述具体问题（至少 5 个字）', 400, ['reason' => 'content_short']);
+            }
+
+            $REASONS = ['答案错误', '题干错误', '选项错误', '答案缺失', '其他'];
+            if ($kind === 'wrong') {
+                if (!in_array($reason, $REASONS, true)) {
+                    fail('请选择问题类型', 400, ['reason' => 'need_reason']);
+                }
+                if ($qid <= 0) {
+                    fail('请选择要申报的题目', 400, ['reason' => 'need_question']);
+                }
+                // 只校验存在性, 绝不回传题目内容 —— 避免绕过额度按 ID 取题
+                $chk = $pdo->prepare('SELECT 1 FROM questions WHERE id = ?');
+                $chk->execute([$qid]);
+                if (!$chk->fetchColumn()) {
+                    fail('题目不存在', 404, ['reason' => 'no_question']);
+                }
+                $dup = $pdo->prepare(
+                    "SELECT id FROM feedback
+                     WHERE user_id = ? AND kind = 'wrong' AND question_id = ?
+                       AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) LIMIT 1"
+                );
+                $dup->execute([(int) $me['id'], $qid]);
+                if ($dup->fetchColumn()) {
+                    fail('这道题你已申报过，我们正在核实', 400, ['reason' => 'duplicate']);
+                }
+            }
+
+            // 频次控制: 每用户每日 + 每 IP 每日
+            $uid   = (int) $me['id'];
+            $ipBin = ip_bin(client_ip());
+            $perUserDay = $kind === 'wrong' ? 20 : 5;
+            $perIpDay   = $kind === 'wrong' ? 40 : 15;
+
+            $st = $pdo->prepare(
+                'SELECT COUNT(*) FROM feedback WHERE user_id = ? AND kind = ? AND created_at >= CURDATE()'
+            );
+            $st->execute([$uid, $kind]);
+            if ((int) $st->fetchColumn() >= $perUserDay) {
+                fail('今日提交已达上限（' . $perUserDay . ' 条），请明天再来', 429,
+                     ['reason' => 'fb_user_daily']);
+            }
+            $st = $pdo->prepare(
+                'SELECT COUNT(*) FROM feedback WHERE ip = ? AND created_at >= CURDATE()'
+            );
+            $st->execute([$ipBin]);
+            if ((int) $st->fetchColumn() >= $perIpDay) {
+                fail('当前网络今日提交过多，请明天再来', 429, ['reason' => 'fb_ip_daily']);
+            }
+
+            $pdo->prepare(
+                'INSERT INTO feedback (user_id, kind, question_id, reason, content, contact, ip, ua)
+                 VALUES (?,?,?,?,?,?,?,?)'
+            )->execute([
+                $uid, $kind,
+                $kind === 'wrong' ? $qid : null,
+                $kind === 'wrong' ? $reason : '',
+                $content,
+                $contact,
+                $ipBin,
+                mb_substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
+            ]);
+            $out = ['ok' => true, 'id' => (int) $pdo->lastInsertId()];
+            break;
+        }
+
+        // ─────────── 反馈: 写评论 ───────────
+        case 'feedback_comment': {
+            $content = trim((string) ($_POST['content'] ?? ''));
+            if ($content === '') {
+                fail('写点什么吧', 400, ['reason' => 'empty']);
+            }
+            if (mb_strlen($content) > 300) {
+                fail('评论最多 300 字', 400, ['reason' => 'too_long']);
+            }
+            $uid   = (int) $me['id'];
+            $ipBin = ip_bin(client_ip());
+
+            $st = $pdo->prepare(
+                "SELECT COUNT(*) FROM feedback
+                 WHERE user_id = ? AND kind = 'comment' AND created_at >= CURDATE()"
+            );
+            $st->execute([$uid]);
+            if ((int) $st->fetchColumn() >= 5) {
+                fail('今天已经说够啦，明天再来', 429, ['reason' => 'cm_user_daily']);
+            }
+            $st = $pdo->prepare(
+                "SELECT COUNT(*) FROM feedback
+                 WHERE ip = ? AND kind = 'comment' AND created_at >= CURDATE()"
+            );
+            $st->execute([$ipBin]);
+            if ((int) $st->fetchColumn() >= 15) {
+                fail('当前网络今天评论过多，明天再来', 429, ['reason' => 'cm_ip_daily']);
+            }
+
+            $pdo->prepare(
+                "INSERT INTO feedback (user_id, kind, content, ip, ua) VALUES (?, 'comment', ?, ?, ?)"
+            )->execute([
+                $uid, $content, $ipBin,
+                mb_substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
+            ]);
+            $out = [
+                'ok'     => true,
+                'id'     => (int) $pdo->lastInsertId(),
+                'name'   => phone_mask((string) ($me['phone'] ?? '')),
+                'items'  => fb_comments($pdo),
+            ];
+            break;
+        }
+
+        // ─────────── 反馈: 评论列表 ───────────
+        case 'feedback_comments': {
+            $out = ['ok' => true, 'items' => fb_comments($pdo)];
+            break;
+        }
+
+        // ─────────── 反馈: 点赞 ───────────
+        case 'feedback_like': {
+            $uid = (int) $me['id'];
+            $has = $pdo->prepare("SELECT id FROM feedback WHERE user_id = ? AND kind = 'like' LIMIT 1");
+            $has->execute([$uid]);
+            $liked = (bool) $has->fetchColumn();
+            if (!$liked) {
+                $pdo->prepare(
+                    "INSERT INTO feedback (user_id, kind, ip, ua) VALUES (?, 'like', ?, ?)"
+                )->execute([
+                    $uid,
+                    ip_bin(client_ip()),
+                    mb_substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
+                ]);
+                $liked = true;
+            }
+            $total = (int) $pdo->query("SELECT COUNT(*) FROM feedback WHERE kind = 'like'")->fetchColumn();
+            $out = ['ok' => true, 'liked' => $liked, 'total' => $total];
+            break;
+        }
+
+        // ─────────── 反馈: 点赞数 (公开, 只读) ───────────
+        case 'feedback_stat': {
+            $total = (int) $pdo->query("SELECT COUNT(*) FROM feedback WHERE kind = 'like'")->fetchColumn();
+            $out = ['ok' => true, 'likes' => $total];
             break;
         }
 
