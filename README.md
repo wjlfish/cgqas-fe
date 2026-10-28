@@ -180,6 +180,32 @@ Web 根目录指向本仓库根目录即可。`index.php` 为默认入口，
 - 面板内题型标签被压成竖排（「判/断」）：`white-space:nowrap` + 不收缩
 - 后台页头用的 `.masthead` 在样式表里不存在（只有 `.topbar`），已补齐
 
+### 维护注意：不要无条件清空 feedback
+
+`feedback` 表里混着真实用户提交的内容与测试数据。清理时**必须**按测试账号圈定范围，例如：
+
+```sql
+DELETE f FROM feedback f
+JOIN users u ON u.id = f.user_id
+WHERE u.phone IN ('13900006666', '13900007777');   -- 只删测试手机号
+```
+
+禁止 `DELETE FROM feedback;` / `TRUNCATE TABLE feedback;`。
+
+误删后的恢复路径（本机 binlog 已开启，`binlog_format=MIXED`）：
+
+```bash
+/www/server/mysql/bin/mysqlbinlog --base64-output=DECODE-ROWS -v \
+  /www/server/data/mysql-bin.000007 > /tmp/bl.txt
+
+# 找出被删的 INSERT（语句格式，带完整字段）
+grep -a 'INSERT INTO feedback' /tmp/bl.txt
+```
+
+2026-10-28 曾因无条件 `DELETE FROM feedback` 误删 2 条真实数据
+（用户 413 对 #6473 的错题申报、用户 5 的点赞），已通过 binlog 按原 id、
+原时间、原 IP 还原。
+
 ## 安全与反爬
 
 站点是公开的只读检索服务，但题库不能让人整库拖走。为此做了分层设计：
