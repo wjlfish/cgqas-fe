@@ -160,3 +160,17 @@ CREATE TABLE IF NOT EXISTS `feedback` (
   KEY `k_status_time`    (`status`,`created_at`),
   KEY `k_question`       (`question_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ═══════════════════════════════════════════════════════════
+-- 题目改动归档 (编辑/删除前留底, 便于回溯)
+-- ═══════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS `questions_archive` (
+  `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `question_id` INT UNSIGNED    NOT NULL,
+  `action`      ENUM('edit','delete') NOT NULL,
+  `old_json`    JSON            NOT NULL,
+  `new_json`    JSON            DEFAULT NULL,
+  `created_at`  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `k_q` (`question_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

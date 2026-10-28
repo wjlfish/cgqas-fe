@@ -113,10 +113,32 @@ if ($act === 'q_get') {
 }
 
 /* ── 错题处理: 保存答案 ── */
+/* ── 题干归一化: 去标点/空白后取 SHA1 (与导入脚本一致) ── */
+function q_norm(string $stem): string
+{
+    $t = preg_replace('/[^\p{L}\p{N}_]/u', '', $stem);
+    return sha1((string) $t);
+}
+
+function q_fetch(PDO $pdo, int $id): ?array
+{
+    $st = $pdo->prepare(
+        'SELECT id, type, stem, stem_norm, options, answer, source, subject_id
+         FROM questions WHERE id = ?'
+    );
+    $st->execute([$id]);
+    $r = $st->fetch();
+    return $r ?: null;
+}
+
+/* ── 错题处理: 保存题干/选项/答案 ── */
 if ($act === 'q_save') {
-    $qid = (int) ($_POST['id'] ?? 0);
-    $ans = trim((string) ($_POST['answer'] ?? ''));
-    $fid = (int) ($_POST['fb_id'] ?? 0);
+    $qid     = (int) ($_POST['id'] ?? 0);
+    $ans     = trim((string) ($_POST['answer'] ?? ''));
+    $stemIn  = array_key_exists('stem', $_POST) ? trim((string) $_POST['stem']) : null;
+    $optsIn  = array_key_exists('options', $_POST) ? (string) $_POST['options'] : null;
+    $fid     = (int) ($_POST['fb_id'] ?? 0);
+
     if ($qid <= 0) {
         fail('invalid id', 400);
     }
@@ -126,15 +148,81 @@ if ($act === 'q_save') {
     if (mb_strlen($ans) > 500) {
         fail('答案过长（最多 500 字）', 400);
     }
-    $st = $pdo->prepare('SELECT type, answer FROM questions WHERE id = ?');
-    $st->execute([$qid]);
-    $row = $st->fetch();
+
+    $row = q_fetch($pdo, $qid);
     if (!$row) {
         fail('题目不存在', 404);
     }
     $type = (string) $row['type'];
-    $old  = (string) $row['answer'];
+    $oldAns  = (string) $row['answer'];
+    $oldStem = (string) $row['stem'];
+    $oldOpts = $row['options'];
 
+    /* 题干 */
+    $newStem = $stemIn === null ? $oldStem : $stemIn;
+    if ($newStem === '') {
+        fail('题干不能为空', 400);
+    }
+    if (mb_strlen($newStem) > 2000) {
+        fail('题干过长（最多 2000 字）', 400);
+    }
+    $newNorm = $oldStem === $newStem ? (string) $row['stem_norm'] : q_norm($newStem);
+    if ($oldStem !== $newStem) {
+        $dup = $pdo->prepare('SELECT id FROM questions WHERE stem_norm = ? AND id <> ? LIMIT 1');
+        $dup->execute([$newNorm, $qid]);
+        $dupId = $dup->fetchColumn();
+        if ($dupId) {
+            fail('题干与 #' . (int) $dupId . ' 重复，无法保存', 409, ['reason' => 'dup_stem', 'dup_id' => (int) $dupId]);
+        }
+    }
+
+    /* 选项 */
+    $newOpts = $oldOpts;
+    $optKeys = [];
+    if ($optsIn !== null && $optsIn !== '') {
+        $arr = json_decode($optsIn, true);
+        if (!is_array($arr)) {
+            fail('选项格式错误', 400);
+        }
+        $clean = [];
+        foreach ($arr as $o) {
+            $k = strtoupper(trim((string) ($o['key'] ?? '')));
+            $t = trim((string) ($o['text'] ?? ''));
+            if ($k === '' && $t === '') {
+                continue;
+            }
+            if (!preg_match('/^[A-Z]$/', $k)) {
+                fail('选项序号必须是单个字母 A-Z', 400);
+            }
+            if ($t === '') {
+                fail('选项 ' . $k . ' 内容不能为空', 400);
+            }
+            if (isset($clean[$k])) {
+                fail('选项序号 ' . $k . ' 重复', 400);
+            }
+            $clean[$k] = ['key' => $k, 'text' => mb_substr($t, 0, 500)];
+        }
+        if (!$clean) {
+            fail('至少需要一个选项', 400);
+        }
+        if (count($clean) > 10) {
+            fail('选项最多 10 个', 400);
+        }
+        ksort($clean);
+        $optKeys = array_keys($clean);
+        $newOpts = json_encode(array_values($clean), JSON_UNESCAPED_UNICODE);
+    } elseif (is_string($oldOpts) && $oldOpts !== '') {
+        $tmp = json_decode($oldOpts, true);
+        if (is_array($tmp)) {
+            foreach ($tmp as $o) {
+                if (isset($o['key'])) {
+                    $optKeys[] = strtoupper((string) $o['key']);
+                }
+            }
+        }
+    }
+
+    /* 答案(按题型校验) */
     if ($type === '判断') {
         $map = ['对' => '正确', '错' => '错误', 'true' => '正确', 'false' => '错误',
                 'T' => '正确', 'F' => '错误'];
@@ -149,48 +237,96 @@ if ($act === 'q_save') {
         if ($ans === '') {
             fail('选择题答案应为选项字母，如 A / AB', 400);
         }
-        if ($type === '单选' && mb_strlen($ans) > 1) {
-            fail('单选题答案只能是一个字母', 400);
-        }
         $letters = array_values(array_unique(str_split($ans)));
         sort($letters);
         $ans = implode('', $letters);
-
-        $st2 = $pdo->prepare('SELECT options FROM questions WHERE id = ?');
-        $st2->execute([$qid]);
-        $raw = (string) $st2->fetchColumn();
-        if ($raw !== '') {
-            $opts = json_decode($raw, true);
-            if (is_array($opts)) {
-                $keys = [];
-                foreach ($opts as $o) {
-                    if (isset($o['key'])) {
-                        $keys[] = strtoupper((string) $o['key']);
-                    }
-                }
-                foreach ($letters as $L) {
-                    if ($keys && !in_array($L, $keys, true)) {
-                        fail('选项 ' . $L . ' 不存在', 400);
-                    }
+        if ($type === '单选' && mb_strlen($ans) > 1) {
+            fail('单选题答案只能是一个字母', 400);
+        }
+        if ($optKeys) {
+            foreach ($letters as $L) {
+                if (!in_array($L, $optKeys, true)) {
+                    fail('选项 ' . $L . ' 不存在', 400);
                 }
             }
+        }
+        if (count($letters) > count($optKeys) && $optKeys) {
+            fail('答案数量超过选项数量', 400);
         }
     }
 
     $pdo->beginTransaction();
     try {
-        $pdo->prepare('UPDATE questions SET answer = ? WHERE id = ?')->execute([$ans, $qid]);
+        $pdo->prepare(
+            'UPDATE questions SET stem = ?, stem_norm = ?, options = ?, answer = ? WHERE id = ?'
+        )->execute([$newStem, $newNorm, $newOpts, $ans, $qid]);
+
+        // 改动归档
+        $pdo->prepare(
+            "INSERT INTO questions_archive (question_id, action, old_json, new_json)
+             VALUES (?, 'edit', ?, ?)"
+        )->execute([
+            $qid,
+            json_encode(['stem' => $oldStem, 'options' => $oldOpts, 'answer' => $oldAns], JSON_UNESCAPED_UNICODE),
+            json_encode(['stem' => $newStem, 'options' => $newOpts, 'answer' => $ans], JSON_UNESCAPED_UNICODE),
+        ]);
+
         if ($fid > 0) {
+            $parts = [];
+            if ($oldStem !== $newStem) { $parts[] = '已改题干'; }
+            if ((string) $oldOpts !== (string) $newOpts) { $parts[] = '已改选项'; }
+            if ($oldAns !== $ans) { $parts[] = '答案：' . $oldAns . ' → ' . $ans; }
+            $note = $parts ? implode('；', $parts) : '仅确认，未改动';
             $pdo->prepare(
                 'UPDATE feedback SET status = 1, admin_note = ? WHERE id = ?'
-            )->execute([mb_substr('原答案：' . $old . ' → 新答案：' . $ans, 0, 240), $fid]);
+            )->execute([mb_substr($note, 0, 240), $fid]);
         }
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();
-        fail('db error', 500);
+        fail('db error: ' . $e->getMessage(), 500);
     }
-    json_out(['ok' => true, 'old' => $old, 'answer' => $ans]);
+    json_out([
+        'ok'         => true,
+        'old'        => $oldAns,
+        'answer'     => $ans,
+        'stem_changed' => $oldStem !== $newStem,
+    ]);
+}
+
+/* ── 错题处理: 删除题目 ── */
+if ($act === 'q_delete') {
+    $qid = (int) ($_POST['id'] ?? 0);
+    $fid = (int) ($_POST['fb_id'] ?? 0);
+    if ($qid <= 0) {
+        fail('invalid id', 400);
+    }
+    $row = q_fetch($pdo, $qid);
+    if (!$row) {
+        fail('题目不存在', 404);
+    }
+    $pdo->beginTransaction();
+    try {
+        $pdo->prepare(
+            "INSERT INTO questions_archive (question_id, action, old_json)
+             VALUES (?, 'delete', ?)"
+        )->execute([$qid, json_encode($row, JSON_UNESCAPED_UNICODE)]);
+
+        $pdo->prepare('DELETE FROM question_subjects WHERE question_id = ?')->execute([$qid]);
+        $pdo->prepare('DELETE FROM dedupe_pairs WHERE a_id = ? OR b_id = ?')->execute([$qid, $qid]);
+        $pdo->prepare('DELETE FROM dedupe_decisions WHERE a_id = ? OR b_id = ?')->execute([$qid, $qid]);
+        $pdo->prepare('DELETE FROM questions WHERE id = ?')->execute([$qid]);
+
+        if ($fid > 0) {
+            $pdo->prepare('UPDATE feedback SET status = 1, admin_note = ? WHERE id = ?')
+                ->execute([mb_substr('已删除该题 #' . $qid, 0, 240), $fid]);
+        }
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        fail('db error: ' . $e->getMessage(), 500);
+    }
+    json_out(['ok' => true, 'deleted' => $qid]);
 }
 
 if ($act === 'fb_status') {

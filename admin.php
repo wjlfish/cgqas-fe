@@ -348,6 +348,27 @@ if ($tab === 'dedupe') {
 .qmodal-foot .qsave:disabled{ opacity:.5 }
 .qmodal-foot .qcancel{ height:34px; padding:0 16px; border:1px solid var(--rule);
   font-size:12.5px; color:var(--ink-2) }
+.qmodal-foot .qdel{ height:34px; padding:0 14px; border:1px solid var(--seal);
+  font-size:12.5px; color:var(--seal); letter-spacing:.04em }
+.qmodal-foot .qdel:hover{ background:var(--seal); color:var(--paper) }
+.qmodal-foot .qdel:disabled{ opacity:.5 }
+.qm-stem-edit textarea{ width:100%; min-height:74px; padding:9px 10px; line-height:1.75;
+  border:1px solid var(--rule); background:var(--paper-2); color:var(--ink);
+  font:inherit; font-size:14px; outline:none; resize:vertical }
+.qm-stem-edit textarea:focus{ border-color:var(--seal); background:var(--paper) }
+.qm-opt-row{ display:flex; gap:7px; align-items:center; margin-bottom:6px }
+.qm-opt-row input[data-ok]{ width:38px; flex:0 0 auto; text-align:center; height:32px;
+  border:1px solid var(--rule); background:var(--paper-2); color:var(--seal);
+  font:inherit; font-size:12.5px; font-weight:600; outline:none }
+.qm-opt-row input[data-ot]{ flex:1; min-width:0; height:32px; padding:0 9px;
+  border:1px solid var(--rule); background:var(--paper-2); color:var(--ink);
+  font:inherit; font-size:12.5px; outline:none }
+.qm-opt-row input:focus{ border-color:var(--seal); background:var(--paper) }
+.qm-opt-del{ flex:0 0 auto; width:26px; height:32px; color:var(--ink-3); font-size:16px }
+.qm-opt-del:hover{ color:var(--seal) }
+.qm-opt-add{ font-size:11.5px; color:var(--ink-3); border:1px dashed var(--rule);
+  padding:5px 12px; margin-top:4px }
+.qm-opt-add:hover{ border-color:var(--ink-3); color:var(--ink-2) }
 .qmsg{ font-size:12px; color:var(--seal) }
 .qm-meta{ display:flex; gap:8px; align-items:center; flex-wrap:wrap;
   font-size:11px; color:var(--ink-3); margin-bottom:10px; letter-spacing:.06em }
@@ -877,7 +898,8 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
     </div>
     <div class="qmodal-body" id="qmBody"><p class="empty">加载中…</p></div>
     <div class="qmodal-foot">
-      <button class="qsave" id="qmSave" type="button">保存答案并标记已处理</button>
+      <button class="qsave" id="qmSave" type="button">保存并标记已处理</button>
+      <button class="qdel" id="qmDel" type="button">删除此题</button>
       <button class="qcancel" type="button" data-qclose="1">取消</button>
       <span class="qmsg" id="qmMsg"></span>
     </div>
@@ -960,6 +982,7 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
         return '<button type="button" class="qm-chip" data-val="' + escQ(k) + '">' + escQ(k) + '</button>';
       }).join('');
     }
+    var canEditOpts = (q.type === '单选' || q.type === '多选' || q.type === '问答');
     var long = (q.type === '填空' || q.type === '问答');
     var editor = long
       ? '<textarea id="qmAns">' + escQ(q.answer) + '</textarea>'
@@ -980,8 +1003,10 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
         (q.subjects ? '<span>' + escQ(q.subjects) + '</span>' : '') +
         (q.source === 'legacy' ? '<span class="tag">旧库</span>' : '') +
         '<span>#' + q.id + '</span></div>' +
-      '<p class="qm-stem">' + escQ(q.stem) + '</p>' +
-      opts +
+      '<div class="qm-lab">题干</div>' +
+      '<div class="qm-stem-edit"><textarea id="qmStem">' + escQ(q.stem) + '</textarea></div>' +
+      (canEditOpts ? '<div class="qm-lab">选项</div><div id="qmOpts"></div>' +
+        '<button type="button" class="qm-opt-add" id="qmOptAdd">＋ 添加选项</button>' : '') +
       '<div class="qm-lab">当前答案</div>' +
       '<p class="qm-old" style="margin:0 0 10px"><b>' + escQ(q.answer) + '</b></p>' +
       '<div class="qm-lab">修改为</div>' +
@@ -998,6 +1023,38 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
         var on = QS.type === '多选' ? v.indexOf(kv) >= 0 : v === kv;
         x.classList.toggle('on', on);
       });
+    }
+
+    /* 选项编辑器 */
+    if (canEditOpts) {
+      var optBox = document.getElementById('qmOpts');
+      var optsData = (q.options && q.options.length) ? q.options.slice() : [];
+      var LETTERS = 'ABCDEFGHIJ';
+      function addRow(k, t) {
+        var row = document.createElement('div');
+        row.className = 'qm-opt-row';
+        row.innerHTML = '<input data-ok maxlength="1" value="' + escQ(k) + '">' +
+                        '<input data-ot value="' + escQ(t) + '" placeholder="选项内容">' +
+                        '<button type="button" class="qm-opt-del" title="删除该选项">×</button>';
+        row.querySelector('.qm-opt-del').addEventListener('click', function () {
+          row.remove();
+        });
+        optBox.appendChild(row);
+      }
+      optsData.forEach(function (o) { addRow(o.key || '', o.text || ''); });
+      if (!optsData.length) { addRow('A', ''); addRow('B', ''); }
+      var addBtn = document.getElementById('qmOptAdd');
+      if (addBtn) addBtn.addEventListener('click', function () {
+        var used = Array.prototype.map.call(
+          optBox.querySelectorAll('input[data-ok]'),
+          function (i) { return i.value.toUpperCase(); });
+        var next = LETTERS.split('').filter(function (c) { return used.indexOf(c) < 0; })[0] || '';
+        addRow(next, '');
+        optBox.lastElementChild.querySelector('input[data-ot]').focus();
+      });
+      QS.hasOpts = true;
+    } else {
+      QS.hasOpts = false;
     }
 
     qmBody.querySelectorAll('.qm-chip').forEach(function (c) {
@@ -1060,6 +1117,18 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
       fd.append('id', QS.qid);
       fd.append('answer', val);
       fd.append('fb_id', QS.fid || 0);
+      var stemEl = document.getElementById('qmStem');
+      if (stemEl) fd.append('stem', stemEl.value);
+      if (QS.hasOpts) {
+        var optArr = [];
+        document.querySelectorAll('#qmOpts .qm-opt-row').forEach(function (row) {
+          var k = row.querySelector('input[data-ok]').value.trim().toUpperCase();
+          var t = row.querySelector('input[data-ot]').value.trim();
+          if (k === '' && t === '') return;
+          optArr.push({ key: k, text: t });
+        });
+        fd.append('options', JSON.stringify(optArr));
+      }
       var r = await fetch('/admin_api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
       var j = await r.json();
       if (!j.ok) throw new Error(j.error || '保存失败');
@@ -1070,6 +1139,30 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
       qmSave.disabled = false;
     }
   });
+
+  /* 删除题目 */
+  var qmDel = document.getElementById('qmDel');
+  if (qmDel) {
+    qmDel.addEventListener('click', async function () {
+      if (!confirm('确定删除题目 #' + QS.qid + '？\n\n删除后该题会从题库消失，同时清理其科目归属与去重记录。\n原始内容会存入 questions_archive，可人工恢复。')) return;
+      qmDel.disabled = true;
+      qmMsg.textContent = '删除中…';
+      try {
+        var fd = new FormData();
+        fd.append('action', 'q_delete');
+        fd.append('id', QS.qid);
+        fd.append('fb_id', QS.fid || 0);
+        var r = await fetch('/admin_api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+        var j = await r.json();
+        if (!j.ok) throw new Error(j.error || '删除失败');
+        qmMsg.textContent = '已删除 #' + j.deleted;
+        setTimeout(function () { closeQ(); location.reload(); }, 600);
+      } catch (e) {
+        qmMsg.textContent = e.message;
+        qmDel.disabled = false;
+      }
+    });
+  }
 
   qm.querySelectorAll('[data-qclose]').forEach(function (el) {
     el.addEventListener('click', closeQ);
