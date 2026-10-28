@@ -143,6 +143,7 @@
             </button>
             <span class="fb-like-n"><b data-like-n>—</b> 人已赞</span>
           </div>
+          <p class="fb-thanks" data-thanks hidden>开发者已答谢，谢谢你的支持。</p>
 
           <form class="fb-cm-form" data-cform>
             <textarea data-cm maxlength="300" rows="2"
@@ -355,6 +356,8 @@
           btn.classList.add('is-on');
           $('[data-like-label]', root).textContent = '已点赞';
         }
+        const th = $('[data-thanks]', root);
+        if (th) th.hidden = !j.thanked;
         likeLoaded = true;
       } catch (e) { /* 静默 */ }
     }
@@ -365,6 +368,11 @@
         $('[data-like-n]', root).textContent = j.total;
         this.classList.add('is-on');
         $('[data-like-label]', root).textContent = '已点赞';
+        try {
+          const st = await request('feedback_stat', {});
+          const th = $('[data-thanks]', root);
+          if (th) th.hidden = !st.thanked;
+        } catch (e) { /* 忽略 */ }
         const pane = paneOf('like');
         let el = pane.querySelector('.fb-flash');
         if (!el) { el = document.createElement('p'); el.className = 'fb-flash'; pane.appendChild(el); }

@@ -581,12 +581,19 @@ try {
         case 'feedback_stat': {
             $total = (int) $pdo->query("SELECT COUNT(*) FROM feedback WHERE kind = 'like'")->fetchColumn();
             $liked = false;
+            $thanked = false;
             if ($me) {
-                $st = $pdo->prepare("SELECT 1 FROM feedback WHERE user_id = ? AND kind = 'like' LIMIT 1");
+                $st = $pdo->prepare(
+                    "SELECT status FROM feedback WHERE user_id = ? AND kind = 'like' LIMIT 1"
+                );
                 $st->execute([(int) $me['id']]);
-                $liked = (bool) $st->fetchColumn();
+                $lk = $st->fetch();
+                if ($lk) {
+                    $liked = true;
+                    $thanked = ((int) $lk['status'] === 1);
+                }
             }
-            $out = ['ok' => true, 'likes' => $total, 'liked' => $liked];
+            $out = ['ok' => true, 'likes' => $total, 'liked' => $liked, 'thanked' => $thanked];
             break;
         }
 

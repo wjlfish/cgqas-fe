@@ -335,7 +335,13 @@ if ($act === 'fb_status') {
     if ($id <= 0 || !in_array($stt, [0, 1, 2], true)) {
         fail('invalid params', 400);
     }
-    $pdo->prepare('UPDATE feedback SET status = ? WHERE id = ?')->execute([$stt, $id]);
+    if (array_key_exists('note', $_POST)) {
+        $note = mb_substr(trim((string) $_POST['note']), 0, 240);
+        $pdo->prepare('UPDATE feedback SET status = ?, admin_note = ? WHERE id = ?')
+            ->execute([$stt, $note, $id]);
+    } else {
+        $pdo->prepare('UPDATE feedback SET status = ? WHERE id = ?')->execute([$stt, $id]);
+    }
     json_out(['ok' => true]);
 }
 

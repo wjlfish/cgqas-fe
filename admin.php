@@ -759,9 +759,9 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
     </select>
     <select name="st">
       <option value="">全部状态</option>
-      <option value="0" <?= (($_GET['st'] ?? '') === '0') ? 'selected' : '' ?>>待处理</option>
-      <option value="1" <?= (($_GET['st'] ?? '') === '1') ? 'selected' : '' ?>>已处理</option>
-      <option value="2" <?= (($_GET['st'] ?? '') === '2') ? 'selected' : '' ?>>已忽略</option>
+      <option value="0" <?= (($_GET['st'] ?? '') === '0') ? 'selected' : '' ?>>待处理 / 未答谢</option>
+      <option value="1" <?= (($_GET['st'] ?? '') === '1') ? 'selected' : '' ?>>已处理 / 已答谢</option>
+      <option value="2" <?= (($_GET['st'] ?? '') === '2') ? 'selected' : '' ?>>已忽略 / 不管</option>
     </select>
     <button type="submit">筛选</button>
     <span class="meta">共 <?= number_format($total) ?> 条</span>
@@ -782,13 +782,35 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
         </td>
         <td class="mono"><?= $esc($r['contact']) ?></td>
         <td>
-          <?= (int) $r['status'] === 0 ? '<span class="tag bad">待处理</span>'
-             : ((int) $r['status'] === 1 ? '<span class="tag ok">已处理</span>'
-             : '<span class="tag">已忽略</span>') ?>
+          <?php
+            $isLike = ($r['kind'] === 'like');
+            $st = (int) $r['status'];
+            if ($isLike) {
+                echo $st === 0 ? '<span class="tag">未答谢</span>'
+                   : ($st === 1 ? '<span class="tag ok">已答谢</span>' : '<span class="tag">不管</span>');
+            } else {
+                echo $st === 0 ? '<span class="tag bad">待处理</span>'
+                   : ($st === 1 ? '<span class="tag ok">已处理</span>' : '<span class="tag">已忽略</span>');
+            }
+          ?>
         </td>
         <td class="num">
-          <?php $isWrong = ($r['kind'] === 'wrong' && (int) $r['question_id'] > 0); ?>
-          <?php if ((int) $r['status'] === 0): ?>
+          <?php
+            $isWrong = ($r['kind'] === 'wrong' && (int) $r['question_id'] > 0);
+            $isLike  = ($r['kind'] === 'like');
+            $st      = (int) $r['status'];
+          ?>
+          <?php if ($isLike): ?>
+            <?php if ($st === 0): ?>
+              <button class="fb-ok" data-id="<?= (int) $r['id'] ?>" data-st="1"
+                      data-note="已答谢" type="button">答谢</button>
+              <button class="fb-ok" data-id="<?= (int) $r['id'] ?>" data-st="2"
+                      data-note="无需处理" type="button">不管</button>
+            <?php else: ?>
+              <button class="fb-ok" data-id="<?= (int) $r['id'] ?>" data-st="0"
+                      data-note="" type="button">撤销</button>
+            <?php endif; ?>
+          <?php elseif ($st === 0): ?>
             <?php if ($isWrong): ?>
               <button class="fb-ok fb-fix" data-id="<?= (int) $r['id'] ?>"
                       data-qid="<?= (int) $r['question_id'] ?>" type="button">查看并改答案</button>
@@ -1142,9 +1164,13 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
 
   /* 删除题目 */
   var qmDel = document.getElementById('qmDel');
+  var delBusy = false;
   if (qmDel) {
     qmDel.addEventListener('click', async function () {
-      if (!confirm('确定删除题目 #' + QS.qid + '？\n\n删除后该题会从题库消失，同时清理其科目归属与去重记录。\n原始内容会存入 questions_archive，可人工恢复。')) return;
+      if (delBusy) return;
+      if (QS.qid <= 0) { qmMsg.textContent = '未选中题目'; return; }
+      if (!confirm('确定删除题目 #' + QS.qid + '？\n\n原文会存入 questions_archive，可人工恢复。')) return;
+      delBusy = true;
       qmDel.disabled = true;
       qmMsg.textContent = '删除中…';
       try {
@@ -1160,6 +1186,7 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
       } catch (e) {
         qmMsg.textContent = e.message;
         qmDel.disabled = false;
+        delBusy = false;
       }
     });
   }
@@ -1183,6 +1210,7 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
         fd.append('action', 'fb_status');
         fd.append('id', b.dataset.id);
         fd.append('status', b.dataset.st);
+        if (b.dataset.note !== undefined) fd.append('note', b.dataset.note);
         const r = await fetch('/admin_api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
         const j = await r.json();
         if (!j.ok) throw new Error(j.error || '失败');

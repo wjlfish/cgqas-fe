@@ -469,6 +469,8 @@ input,select{ font:inherit; color:inherit }
 .fb-like-btn.is-on{ border-color:var(--seal); color:var(--seal); background:var(--seal-wash) }
 .fb-like-btn.is-on svg{ fill:var(--seal) }
 .fb-like-btn:disabled{ cursor:default }
+.fb-thanks{ margin:11px 0 0; font-size:12px; color:var(--seal); letter-spacing:.02em }
+.fb-thanks::before{ content:"—"; margin-right:6px; color:var(--rule) }
 .fb-like-n{ font-size:12px; color:var(--ink-3) }
 .fb-like-n b{ color:var(--ink); font-variant-numeric:tabular-nums; font-size:14px }
 
