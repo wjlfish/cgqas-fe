@@ -316,7 +316,10 @@
       if (!el) {
         el = document.createElement('p');
         el.className = 'fb-flash';
-        p.appendChild(el);
+        const anchor = Array.from(p.children)
+          .find((c) => c.matches('.fb-cms, .fb-acts'));
+        if (anchor) p.insertBefore(el, anchor);
+        else p.appendChild(el);
       }
       el.className = 'fb-flash' + (kind ? ' is-' + kind : '');
       el.textContent = text;
@@ -327,7 +330,10 @@
       if (!el) {
         el = document.createElement('p');
         el.className = 'fb-flash';
-        p.appendChild(el);
+        const anchor = Array.from(p.children)
+          .find((c) => c.matches('.fb-cms, .fb-acts'));
+        if (anchor) p.insertBefore(el, anchor);
+        else p.appendChild(el);
       }
       el.className = 'fb-flash is-warn';
       el.innerHTML = '请先完成手机号验证。<a href="/" data-gologin>去登录</a>';
@@ -344,6 +350,11 @@
       try {
         const j = await request('feedback_stat', {});
         $('[data-like-n]', root).textContent = j.likes;
+        if (j.liked) {
+          const btn = $('[data-like]', root);
+          btn.classList.add('is-on');
+          $('[data-like-label]', root).textContent = '已点赞';
+        }
         likeLoaded = true;
       } catch (e) { /* 静默 */ }
     }

@@ -580,7 +580,13 @@ try {
         // ─────────── 反馈: 点赞数 (公开, 只读) ───────────
         case 'feedback_stat': {
             $total = (int) $pdo->query("SELECT COUNT(*) FROM feedback WHERE kind = 'like'")->fetchColumn();
-            $out = ['ok' => true, 'likes' => $total];
+            $liked = false;
+            if ($me) {
+                $st = $pdo->prepare("SELECT 1 FROM feedback WHERE user_id = ? AND kind = 'like' LIMIT 1");
+                $st->execute([(int) $me['id']]);
+                $liked = (bool) $st->fetchColumn();
+            }
+            $out = ['ok' => true, 'likes' => $total, 'liked' => $liked];
             break;
         }
 
