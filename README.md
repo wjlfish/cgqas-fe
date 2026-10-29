@@ -390,13 +390,15 @@ open_basedir=/www/wwwroot/cgtk.wjlo.cc/:/tmp/:/www/server/php/81/etc/:/www/wwwro
 链接变量在文件顶部：
 
 ```php
-$AD_URL   = 'https://oc.qiyun.site/register';   // 落地页（注册页，不是登录页）
+$AD_URL   = 'https://oc.qiyun.site/register?aff=XTCF2MLXZHZB';   // 落地页 + 推广码
 $AD_LABEL = 'api.qiyun.site';                    // 展示的域名
 ```
 
 > 对接方是 Sub2API 实例：`api.qiyun.site/` 会 302 到 `/login`，对未注册用户是死路；
 > `oc.qiyun.site/register` 才是注册表单。Sub2API 支持 `?aff=<推广码>` 参数，
 > 注册时随请求体提交，但需要实例开启 `affiliate_enabled` 才会记录。
+> **当前该实例 `affiliate_enabled = false`**（`/api/v1/settings/public` 可查），
+> 即推广码会被前端读取但不会归属，需站主在后台开启后才生效。
 
 ## 安全与反爬
 

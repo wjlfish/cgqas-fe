@@ -6,8 +6,8 @@ if (!defined('CG_SITE')) {
 }
 
 // 落地页: 注册页比登录页转化好得多(登录页对新用户是死路)
-// 拿到推广码后形如: https://oc.qiyun.site/register?aff=你的推广码
-$AD_URL   = 'https://oc.qiyun.site/register';
+// 推广码 XTCF2MLXZHZB (需站主开启 affiliate_enabled 才会记录归属)
+$AD_URL   = 'https://oc.qiyun.site/register?aff=XTCF2MLXZHZB';
 $AD_LABEL = 'api.qiyun.site';
 ?>
 <a class="adtop" href="<?= htmlspecialchars($AD_URL, ENT_QUOTES) ?>" target="_blank" rel="noopener noreferrer nofollow sponsored"
