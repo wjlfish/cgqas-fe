@@ -3,6 +3,14 @@ declare(strict_types=1);
 require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/ratelimit.php';
 
+require_once __DIR__ . '/lib/geo.php';
+
+// 境外 IP: 不渲染任何功能, 直接给提示页
+if (geo_blocked()) {
+    geo_blocked_page();
+}
+
+
 $ip = client_ip();
 $t  = issue_token($ip);
 $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');

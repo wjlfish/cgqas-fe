@@ -41,7 +41,8 @@ api.php ── 路由 / 校验 / 限流 ──► MySQL
 index.php            前端入口(下发令牌、写访问日志)
 api.php              API 路由(search / subjects / stats / detail / refresh)
 feedback.php         问题反馈独立页面
-ops/                 运维脚本(部署到 docroot 之外)
+ops/                 运维脚本与 IP 库(部署到 docroot 之外)
+.user.ini            open_basedir, 需包含 /www/wwwroot/cgtk-ops/
 admin.php            后台管理面板(需 admin_key)
 admin_api.php        后台接口(去重判定/批量删除/反馈状态)
 assets/feedback.js   反馈组件(弹框与独立页共用)
@@ -318,6 +319,60 @@ grep -a 'INSERT INTO feedback' /tmp/bl.txt
 
 同时用 `register_shutdown_function` 兜住 `E_ERROR / E_PARSE / E_CORE_ERROR / E_COMPILE_ERROR`，
 PHP-FPM 白屏或上游 502 时能留下现场。
+
+## 地域限制（仅面向中国大陆）
+
+境外 IP 一律**软拦截**：页面不渲染任何功能，只给提示页；API 直接 403。
+
+```
+API  →  {"ok":false,"error":"仅面向中国大陆用户开放，请切换网络或关闭代理后重试",
+         "reason":"geo_blocked"}   HTTP 403
+页面 →  403 + 极简提示页（无 JS、无令牌、无任何入口）
+```
+
+### 判定方式
+
+离线 [`ip2region`](https://github.com/lionsoul2014/ip2region) xdb，**不调用任何外部 API**：
+
+| 位置 | 说明 |
+|---|---|
+| `/www/wwwroot/cgtk-ops/data/ip2region_v4.xdb` | ~11MB IP 库 |
+| `/www/wwwroot/cgtk-ops/vendor/Searcher.class.php` | 官方 PHP 读取器 |
+
+规则：`region` 以「中国」开头且省份不是港澳台 → 放行，否则拦截。
+
+### 例外（放行）
+
+- **管理员**：带 `cg_admin` cookie 的请求全程放行，境外也能运维后台
+- **私网 / 保留地址**：健康检查走 `127.0.0.1`，不受影响
+- `config.geo.allow_ips` 里列出的 IP
+- **库文件缺失或解析失败 → 放行**并写日志（可用性优先，不会因为库坏了把所有人挡在外面）
+- IPv6：域名无 AAAA 记录，直连 v6 极少见，暂放行并记录
+
+### 配置
+
+```php
+'geo' => [
+    'enable'    => true,
+    'xdb'       => '/www/wwwroot/cgtk-ops/data/ip2region_v4.xdb',
+    'vendor'    => '/www/wwwroot/cgtk-ops/vendor/Searcher.class.php',
+    'log'       => '/www/wwwlogs/cgtk-geo-block.log',
+    'allow_ips' => [],
+    'test_ip'   => '',   // 联调用：非空时强制按该 IP 判定
+],
+```
+
+### 部署要点
+
+`lib/geo.php` 要从站点目录访问 `cgtk-ops`，`.user.ini` 的 `open_basedir` 必须包含它：
+
+```ini
+open_basedir=/www/wwwroot/cgtk.wjlo.cc/:/tmp/:/www/server/php/81/etc/:/www/wwwroot/cgtk-ops/
+```
+
+改完 `.user.ini` 需要重启 PHP-FPM（或等 `user_ini.cache_ttl` 过期）才生效。
+
+拦截记录写 `/www/wwwlogs/cgtk-geo-block.log`。
 
 ## 安全与反爬
 

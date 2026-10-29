@@ -3,6 +3,7 @@ declare(strict_types=1);
 /** 后台管理面板: 用户 / 访客 / 检索 / 短信 / 限流 / 去重 */
 require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/admin.php';
+require_once __DIR__ . '/lib/geo.php';
 
 if (($_GET['logout'] ?? '') === '1') {
     admin_logout();
@@ -20,7 +21,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pass'])) {
 
 $esc = static fn($s): string => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 
+// 后台不做地域拦截(管理员可能在境外), 仅记录
 if (!admin_logged_in()) {
+    if (function_exists('geo_blocked') && geo_enabled() && !geo_is_local(geo_client_ip())) {
+        geo_log('ADMIN_LOGIN_FROM ' . geo_client_ip() . ' ' . (string) geo_region(geo_client_ip()));
+    }
     ?><!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>后台 · 登录</title><link rel="stylesheet" href="/assets/style.css?v=5">

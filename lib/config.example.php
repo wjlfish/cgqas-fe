@@ -103,4 +103,14 @@ return [
         'min_interval' => 1800,    // 同类告警最小间隔(秒), 防止刷屏
         'sms_fail_min' => 3,       // 30 分钟内短信失败请求达到该数量才告警
     ],
+
+    // ── 地域限制(仅面向中国大陆, 软 ban) ──
+    'geo' => [
+        'enable'    => true,
+        'xdb'       => '/www/wwwroot/cgtk-ops/data/ip2region_v4.xdb',
+        'vendor'    => '/www/wwwroot/cgtk-ops/vendor/Searcher.class.php',
+        'log'       => '/www/wwwlogs/cgtk-geo-block.log',
+        'allow_ips' => [],   // 例外 IP, 管理员 cookie 始终放行
+        'test_ip'   => '',   // 仅联调用: 非空时强制按该 IP 判定
+    ],
 ];

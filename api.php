@@ -22,6 +22,7 @@ require_once __DIR__ . '/lib/ratelimit.php';
 require_once __DIR__ . '/lib/sms.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/captcha2.php';
+require_once __DIR__ . '/lib/geo.php';
 
 $t0     = microtime(true);
 $c      = cfg();
@@ -49,6 +50,13 @@ if (in_array($action, $POST_ONLY, true) && ($_SERVER['REQUEST_METHOD'] ?? 'GET')
 
 
 $isAdmin = is_admin();
+
+// ── 地域限制: 境外 IP 直接拒绝(管理员与白名单放行) ──
+if (!$isAdmin && geo_blocked()) {
+    log_request($action, $_GET, 403, 0);
+    fail('仅面向中国大陆用户开放，请切换网络或关闭代理后重试', 403,
+         ['reason' => 'geo_blocked']);
+}
 
 // ── 1. UA 校验(管理旁路跳过) ──
 if (!$isAdmin && ua_blacklisted()) {
