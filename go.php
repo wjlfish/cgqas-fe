@@ -23,12 +23,14 @@ if (!isset(AD_TARGETS[$to])) {
 // 同一 IP 10 分钟内只记一次，避免被刷计数
 try {
     $ipBin = ip_bin(client_ip());
+    // 去重按「IP + 广告位」: 同一人点不同广告都要计数
     $st = db()->prepare(
         "SELECT 1 FROM request_log
-         WHERE ip = ? AND action = 'ad_click' AND created_at >= NOW() - INTERVAL 10 MINUTE
+         WHERE ip = ? AND action = 'ad_click' AND query = ?
+           AND created_at >= NOW() - INTERVAL 10 MINUTE
          LIMIT 1"
     );
-    $st->execute([$ipBin]);
+    $st->execute([$ipBin, $to]);
     if (!$st->fetchColumn()) {
         log_request('ad_click', ['q' => $to], 302, 0);
     }

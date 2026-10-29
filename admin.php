@@ -155,6 +155,15 @@ if ($tab === 'overview') {
         "SELECT phone, created_at, inet6_ntoa(last_ip) ip
          FROM users ORDER BY id DESC LIMIT 8"
     )->fetchAll();
+    $adStats = $pdo->query(
+        "SELECT query AS target,
+                SUM(created_at >= CURDATE()) AS today,
+                COUNT(*) AS days7,
+                MAX(created_at) AS last_at
+         FROM request_log
+         WHERE action = 'ad_click' AND created_at >= CURDATE() - INTERVAL 6 DAY
+         GROUP BY query ORDER BY days7 DESC"
+    )->fetchAll();
     $topQueries = $pdo->query(
         "SELECT query, COUNT(*) n FROM search_logs
          WHERE query <> '' GROUP BY query ORDER BY n DESC LIMIT 10"
@@ -633,6 +642,20 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
       </tr>
     <?php endforeach; ?>
     <?php if (!$newUsers): ?><tr><td colspan="3" class="empty">暂无数据</td></tr><?php endif; ?>
+  </table></div>
+
+  <div class="sec"><h2>广告点击</h2><span class="meta">按广告位拆分，近 7 天</span></div>
+  <div class="tw"><table>
+    <tr><th>广告位</th><th>今日点击</th><th>近 7 天</th><th>最近点击</th></tr>
+    <?php foreach ($adStats as $a): ?>
+      <tr>
+        <td><?= $esc($a['target']) ?></td>
+        <td class="num"><?= (int) $a['today'] ?></td>
+        <td class="num"><?= (int) $a['days7'] ?></td>
+        <td class="num"><?= $esc((string) $a['last_at']) ?></td>
+      </tr>
+    <?php endforeach; ?>
+    <?php if (!$adStats): ?><tr><td colspan="4" class="empty">暂无广告点击</td></tr><?php endif; ?>
   </table></div>
 
   <div class="sec"><h2>高频检索词</h2></div>
