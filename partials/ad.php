@@ -18,7 +18,7 @@ $AD_LABEL = 'api.qiyun.site';
         <span class="adtop-tag">广告</span>
         <span class="adtop-main">Claude 老封号？GPT 订阅贵还降智？</span>
       </span>
-      <span class="adtop-sub">中转站国内直连 · 一个 Key 用遍 <b>DeepSeek</b> / <b>GPT-6 Astra</b> / <b>Claude CC Max</b> · 按量付费</span>
+      <span class="adtop-sub">中转站国内直连 · 一个 Key 用遍 <b>DeepSeek</b> / <b>GPT-6 Astra</b> / <b>Claude Fable / Opus</b> · 按量付费</span>
     </a>
     <a class="adtop-cta" href="/go.php?to=qiyun" target="_blank"
        rel="noopener noreferrer nofollow sponsored">
