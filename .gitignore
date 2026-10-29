@@ -1,6 +1,9 @@
 # 本地配置(含数据库密码与密钥)
 lib/config.php
 
+# 后台随机路径(密钥, 绝不入库)
+.admin_path
+
 # 题库与个人数据
 sql/data.sql
 sql/*.local.sql

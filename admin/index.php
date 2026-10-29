@@ -1,19 +1,23 @@
 <?php
 declare(strict_types=1);
 /** 后台管理面板: 用户 / 访客 / 检索 / 短信 / 限流 / 去重 */
-require_once __DIR__ . '/lib/db.php';
-require_once __DIR__ . '/lib/admin.php';
-require_once __DIR__ . '/lib/geo.php';
+require_once __DIR__ . '/../lib/db.php';
+require_once __DIR__ . '/../lib/admin.php';
+require_once __DIR__ . '/../lib/geo.php';
+
+// 后台入口目录名即密钥: 路径不写死, 跟随实际部署目录
+$BASE = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
+if ($BASE === '' || $BASE === '.') { $BASE = ''; }
 
 if (($_GET['logout'] ?? '') === '1') {
     admin_logout();
-    header('Location: /admin.php');
+    header('Location: ' . $BASE . '/');
     exit;
 }
 $err = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pass'])) {
     if (admin_login((string) $_POST['pass'])) {
-        header('Location: /admin.php');
+        header('Location: ' . $BASE . '/');
         exit;
     }
     $err = '口令错误';
@@ -100,7 +104,7 @@ function nav(string $tab, int $cur, int $pages, array $extra = []): string
     $mk = static function (int $i, string $label, bool $on = false) use ($tab, $qs): string {
         $qs['tab']  = $tab;
         $qs['page'] = $i;
-        $href = '/admin.php?' . http_build_query($qs);
+        $href = $BASE . '/?' . http_build_query($qs);
         return '<a class="pg' . ($on ? ' on' : '') . '" href="' . htmlspecialchars($href, ENT_QUOTES) . '">'
              . $label . '</a>';
     };
@@ -552,10 +556,10 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
 </head>
 <body>
 <header class="masthead"><div class="shell">
-  <a class="mark" href="/admin.php"><span>创高题库</span><span class="dot">·</span><em>后台</em></a>
+  <a class="mark" href="<?= $BASE ?>/"><span>创高题库</span><span class="dot">·</span><em>后台</em></a>
   <nav class="nav">
     <a class="nav-link" href="/">前台</a>
-    <a class="nav-link" href="/admin.php?logout=1">退出</a>
+    <a class="nav-link" href="<?= $BASE ?>/?logout=1">退出</a>
   </nav>
 </div></header>
 
@@ -580,7 +584,7 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
 
   <nav class="tabs">
     <?php foreach ($TABS as $k => $label): ?>
-      <a class="<?= $k === $tab ? 'on' : '' ?>" href="/admin.php?tab=<?= $k ?>">
+      <a class="<?= $k === $tab ? 'on' : '' ?>" href="<?= $BASE ?>/?tab=<?= $k ?>">
         <?= $esc($label) ?><?php
           if ($k === 'dedupe' && $G['pending'] > 0) {
               echo '<b>' . (int) $G['pending'] . '</b>';
@@ -984,7 +988,7 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
 
   <div class="cats">
     <?php foreach ($CATNAME as $k => $label): $u = $dcnt[$k]['undecided'] ?? 0; ?>
-      <a class="<?= $k === $dcat ? 'on' : '' ?>" href="/admin.php?tab=dedupe&cat=<?= $k ?>">
+      <a class="<?= $k === $dcat ? 'on' : '' ?>" href="<?= $BASE ?>/?tab=dedupe&cat=<?= $k ?>">
         <?= $esc($label) ?><?= $u > 0 ? "<b>$u</b>" : ' ✓' ?>
       </a>
     <?php endforeach; ?>
@@ -1046,7 +1050,7 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
     <div class="pgnav">
       <?php for ($i = 0; $i < min((int) ceil($dundec / 10), 12); $i++): ?>
         <a class="pg <?= $i === $page ? 'on' : '' ?>"
-           href="/admin.php?tab=dedupe&cat=<?= $dcat ?>&page=<?= $i ?>"><?= $i + 1 ?></a>
+           href="<?= $BASE ?>/?tab=dedupe&cat=<?= $dcat ?>&page=<?= $i ?>"><?= $i + 1 ?></a>
       <?php endfor; ?>
       <span class="pgtot">共 <?= (int) ceil($dundec / 10) ?> 页</span>
     </div>
@@ -1094,7 +1098,7 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
           fd.append('a', card.dataset.a);
           fd.append('b', card.dataset.b);
           fd.append('choice', btn.dataset.act);
-          const r = await fetch('/admin_api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+          const r = await fetch('<?= $BASE ?>/api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
           const j = await r.json();
           if (!j.ok) throw new Error(j.error || '失败');
           card.style.transition = 'opacity .2s';
@@ -1260,7 +1264,7 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
       fd.append('action', 'q_get');
       fd.append('id', qid);
       fd.append('fb_id', fid || 0);
-      var r = await fetch('/admin_api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+      var r = await fetch('<?= $BASE ?>/api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
       var j = await r.json();
       if (!j.ok) throw new Error(j.error || '加载失败');
       renderQ(j);
@@ -1295,7 +1299,7 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
         });
         fd.append('options', JSON.stringify(optArr));
       }
-      var r = await fetch('/admin_api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+      var r = await fetch('<?= $BASE ?>/api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
       var j = await r.json();
       if (!j.ok) throw new Error(j.error || '保存失败');
       qmMsg.textContent = '已保存';
@@ -1322,7 +1326,7 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
         fd.append('action', 'q_delete');
         fd.append('id', QS.qid);
         fd.append('fb_id', QS.fid || 0);
-        var r = await fetch('/admin_api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+        var r = await fetch('<?= $BASE ?>/api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
         var j = await r.json();
         if (!j.ok) throw new Error(j.error || '删除失败');
         qmMsg.textContent = '已删除 #' + j.deleted;
@@ -1366,7 +1370,7 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
       }
       b.disabled = true;
       try {
-        const r = await fetch('/admin_api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+        const r = await fetch('<?= $BASE ?>/api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
         const j = await r.json();
         if (!j.ok) throw new Error(j.error || '失败');
         location.reload();
@@ -1383,7 +1387,7 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
         fd.append('id', b.dataset.id);
         fd.append('status', b.dataset.st);
         if (b.dataset.note !== undefined) fd.append('note', b.dataset.note);
-        const r = await fetch('/admin_api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+        const r = await fetch('<?= $BASE ?>/api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
         const j = await r.json();
         if (!j.ok) throw new Error(j.error || '失败');
         location.reload();
@@ -1400,7 +1404,7 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
       try {
         const fd = new FormData();
         fd.append('action', 'bulk_legacy');
-        const r = await fetch('/admin_api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+        const r = await fetch('<?= $BASE ?>/api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
         const j = await r.json();
         if (!j.ok) throw new Error(j.error || '失败');
         toast('已删除 ' + j.deleted + ' 条旧库题');

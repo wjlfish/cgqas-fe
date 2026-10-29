@@ -6,7 +6,8 @@ ServerSignature Off
 <FilesMatch "\.(sql|jsonl|md|log|ini|bak|sh)$">
   Require all denied
 </FilesMatch>
-RedirectMatch 404 ^/(lib|sql|\.git|\.env)
+RedirectMatch 404 ^/(lib|sql|\.git|\.env|admin)
+# 后台源码目录 admin/ 只作部署来源, 线上应部署到随机目录
 
 # 安全响应头
 <IfModule mod_headers.c>

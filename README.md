@@ -406,6 +406,43 @@ $AD_LABEL = 'api.qiyun.site';                    // 展示的域名
 > **当前该实例 `affiliate_enabled = false`**（`/api/v1/settings/public` 可查），
 > 即推广码会被前端读取但不会归属，需站主在后台开启后才生效。
 
+## 后台入口（随机路径）
+
+后台不是固定地址：源码放在仓库的 `admin/` 目录，**线上部署到一个随机命名的目录**，
+目录名就是访问密钥。
+
+```
+线上形态:   /<12位随机串>/          ← 后台面板
+            /<12位随机串>/api.php   ← 后台接口
+源码形态:   admin/index.php          ← 部署来源
+            admin/api.php
+```
+
+旧的 `/admin.php`、`/admin_api.php`、`/dedupe.php` 已删除，访问一律 404。
+根 `.htaccess` 也把 `/admin/` 404 掉，避免有人把仓库原样部署导致源码目录直接可访问。
+
+### 部署 / 轮换
+
+```bash
+TOKEN=$(openssl rand -hex 6)          # 12 位随机串
+ssh root@host "mkdir -p /www/wwwroot/cgtk.wjlo.cc/$TOKEN"
+scp admin/index.php admin/api.php root@host:/www/wwwroot/cgtk.wjlo.cc/$TOKEN/
+ssh root@host "chown -R www:www /www/wwwroot/cgtk.wjlo.cc/$TOKEN"
+echo "$TOKEN" > .admin_path           # 本地保存, 已 gitignore
+```
+
+轮换只需换目录名，旧目录删掉即可。
+
+### 代码为什么能跟着目录走
+
+`admin/index.php` 里：
+
+```php
+$BASE = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/'), '/');
+```
+
+所有站内链接与 `fetch` 都用 `$BASE` 拼接，所以页面挪到任何目录都不需要改代码。
+
 ## 安全与反爬
 
 站点是公开的只读检索服务，但题库不能让人整库拖走。为此做了分层设计：

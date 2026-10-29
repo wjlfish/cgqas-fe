@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 ini_set('display_errors', '0');
-require_once __DIR__ . '/lib/db.php';
-require_once __DIR__ . '/lib/admin.php';
-require_once __DIR__ . '/lib/response.php';
+require_once __DIR__ . '/../lib/db.php';
+require_once __DIR__ . '/../lib/admin.php';
+require_once __DIR__ . '/../lib/response.php';
 
 if (!admin_logged_in()) {
     fail('unauthorized', 401);
