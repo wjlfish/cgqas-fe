@@ -113,42 +113,51 @@ input,select{ font:inherit; color:inherit }
 .reset-btn:hover{ color:var(--seal) }
 
 /* 顶部广告位 */
-.adtop-wrap{ background:var(--paper); border-bottom:1px solid var(--rule) }
-.adtop{
-  display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+.adgrid{
+  display:grid; grid-template-columns:1fr 1fr; gap:1px;
   width:min(var(--shell), calc(100% - var(--gut)*2)); margin:0 auto;
-  padding:13px 0;
+  background:var(--rule); border-top:1px solid var(--rule);
+  border-bottom:1px solid var(--rule);
 }
-.adtop-body{ flex:1 1 420px; min-width:0; display:flex; flex-direction:column; gap:5px;
-  text-decoration:none; color:inherit }
-.adtop-line1{ display:flex; align-items:center; gap:9px; flex-wrap:wrap }
-.adtop-tag{
+.adcard{
+  display:flex; flex-direction:column; gap:5px;
+  padding:12px 16px; background:var(--paper); text-decoration:none; color:inherit;
+  transition:background-color .2s var(--ease);
+}
+.adcard:hover{ background:var(--paper-2) }
+.adcard-top{ display:flex; align-items:center; gap:12px; flex-wrap:nowrap; min-width:0 }
+.adcard-tag{
   flex:0 0 auto; font-size:9.5px; letter-spacing:.16em; color:var(--seal);
   border:1px solid rgba(176,58,46,.35); padding:1px 5px; line-height:15px;
   background:var(--seal-wash);
 }
-.adtop-main{
+.adcard-main{
+  flex:1 1 auto; min-width:0;
   font-family:"Songti SC","Source Han Serif SC",STSong,SimSun,serif;
-  font-size:16.5px; font-weight:600; color:var(--ink); letter-spacing:.01em;
+  font-size:15px; font-weight:600; color:var(--ink); letter-spacing:.01em;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
-.adtop-sub{ font-size:12px; color:var(--ink-3); letter-spacing:.02em }
-.adtop-sub b{ color:var(--ink-2); font-weight:600 }
-.adtop-cta{
-  flex:0 0 auto; display:inline-flex; align-items:center; gap:7px;
-  height:38px; padding:0 20px; background:var(--ink); color:var(--paper);
-  font-size:13px; letter-spacing:.08em; text-decoration:none; white-space:nowrap;
-  transition:background-color .22s var(--ease), transform .22s var(--ease);
+.adcard:hover .adcard-main{ color:var(--seal) }
+.adcard-cta{
+  flex:0 0 auto; display:inline-flex; align-items:center; gap:4px;
+  font-size:12px; letter-spacing:.06em; color:var(--paper);
+  background:var(--ink); padding:4px 11px;
+  transition:background-color .22s var(--ease);
 }
-.adtop-cta:hover{ background:var(--seal); transform:translateX(1px) }
-.adtop-cta svg{ width:13px; height:13px }
-.adtop:hover .adtop-main{ color:var(--seal) }
-.adtop-body:hover{ text-decoration:none }
-@media(max-width:640px){
-  .adtop{ flex-direction:column; align-items:stretch; gap:11px; padding:12px 0 }
-  .adtop-body{ flex:0 0 auto; gap:4px }
-  .adtop-main{ font-size:15px }
-  .adtop-sub{ font-size:11.5px }
-  .adtop-cta{ width:100%; justify-content:center; height:40px }
+.adcard:hover .adcard-cta{ background:var(--seal) }
+.adcard-cta svg{ width:11px; height:11px }
+.adcard-sub{
+  font-size:11.5px; color:var(--ink-3); letter-spacing:.02em; line-height:1.6;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+@media(max-width:760px){
+  .adgrid{ grid-template-columns:1fr }
+  .adcard{ padding:11px 0 }
+  .adcard-top{ flex-wrap:wrap; gap:9px }
+  .adcard-main{ flex:1 1 100%; font-size:14.5px; order:3; white-space:normal }
+  .adcard-cta{ margin-left:auto }
+  .adcard-sub{ font-size:11px }
 }
 
 /* 视图 */

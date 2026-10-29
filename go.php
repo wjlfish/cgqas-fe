@@ -8,7 +8,8 @@ require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/ratelimit.php';
 
 const AD_TARGETS = [
-    'qiyun' => 'https://oc.qiyun.site/register?aff=XTCF2MLXZHZB',
+    'qiyun'     => 'https://oc.qiyun.site/register?aff=XTCF2MLXZHZB',
+    'skyrouter' => 'https://skyrouter.cc/register?aff=GMH6QMREA92Q',
 ];
 
 $to = preg_replace('/[^a-z0-9_]/', '', (string) ($_GET['to'] ?? ''));
