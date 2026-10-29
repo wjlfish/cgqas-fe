@@ -113,31 +113,42 @@ input,select{ font:inherit; color:inherit }
 .reset-btn:hover{ color:var(--seal) }
 
 /* 顶部广告位 */
+.adtop-wrap{ background:var(--paper); border-bottom:1px solid var(--rule) }
 .adtop{
-  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  display:flex; align-items:center; gap:18px; flex-wrap:wrap;
   width:min(var(--shell), calc(100% - var(--gut)*2)); margin:0 auto;
-  padding:9px 0; border-bottom:1px solid var(--rule-soft);
-  font-size:12px; color:var(--ink-2); text-decoration:none;
-  transition:color .2s var(--ease);
+  padding:13px 0;
 }
-.adtop:hover{ color:var(--ink) }
+.adtop-body{ flex:1 1 420px; min-width:0; display:flex; flex-direction:column; gap:5px;
+  text-decoration:none; color:inherit }
+.adtop-line1{ display:flex; align-items:center; gap:9px; flex-wrap:wrap }
 .adtop-tag{
-  flex:0 0 auto; font-size:9.5px; letter-spacing:.14em; color:var(--ink-3);
-  border:1px solid var(--rule); padding:0 4px; line-height:15px;
+  flex:0 0 auto; font-size:9.5px; letter-spacing:.16em; color:var(--seal);
+  border:1px solid rgba(176,58,46,.35); padding:1px 5px; line-height:15px;
+  background:var(--seal-wash);
 }
-.adtop-main{ color:var(--ink); letter-spacing:.01em }
-.adtop-sub{ color:var(--ink-3); font-size:11.5px }
-.adtop-sub::before{ content:"—"; margin-right:8px; color:var(--rule) }
-.adtop-go{
-  margin-left:auto; flex:0 0 auto; color:var(--seal); font-size:11.5px;
-  display:inline-flex; align-items:center; gap:3px; letter-spacing:.02em;
+.adtop-main{
+  font-family:"Songti SC","Source Han Serif SC",STSong,SimSun,serif;
+  font-size:16.5px; font-weight:600; color:var(--ink); letter-spacing:.01em;
 }
-.adtop:hover .adtop-go{ text-decoration:underline }
-.adtop-go svg{ width:10px; height:10px; opacity:.8 }
+.adtop-sub{ font-size:12px; color:var(--ink-3); letter-spacing:.02em }
+.adtop-sub b{ color:var(--ink-2); font-weight:600 }
+.adtop-cta{
+  flex:0 0 auto; display:inline-flex; align-items:center; gap:7px;
+  height:38px; padding:0 20px; background:var(--ink); color:var(--paper);
+  font-size:13px; letter-spacing:.08em; text-decoration:none; white-space:nowrap;
+  transition:background-color .22s var(--ease), transform .22s var(--ease);
+}
+.adtop-cta:hover{ background:var(--seal); transform:translateX(1px) }
+.adtop-cta svg{ width:13px; height:13px }
+.adtop:hover .adtop-main{ color:var(--seal) }
+.adtop-body:hover{ text-decoration:none }
 @media(max-width:640px){
-  .adtop{ font-size:11.5px; gap:8px; padding:8px 0 }
-  .adtop-sub{ display:none }
-  .adtop-go{ margin-left:0; width:100%; justify-content:flex-end }
+  .adtop{ flex-direction:column; align-items:stretch; gap:11px; padding:12px 0 }
+  .adtop-body{ flex:0 0 auto; gap:4px }
+  .adtop-main{ font-size:15px }
+  .adtop-sub{ font-size:11.5px }
+  .adtop-cta{ width:100%; justify-content:center; height:40px }
 }
 
 /* 视图 */
