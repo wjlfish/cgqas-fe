@@ -383,6 +383,8 @@ open_basedir=/www/wwwroot/cgtk.wjlo.cc/:/tmp/:/www/server/php/81/etc/:/www/wwwro
 - 文件：`partials/ad.php`，由 `index.php` / `feedback.php` 引入
 - `partials/` 目录带 `CG_SITE` 常量守卫，直接访问返回 404
 - 链接带 `rel="noopener noreferrer nofollow sponsored"`，并标注「广告」
+- 点击经 `/go.php?to=qiyun` 302 跳转并记录，用于统计点击量
+  （白名单跳转，非法目标 404；同一 IP 10 分钟内只记一次）
 - 样式类 `.adtop`，跟随纸/墨主题；移动端隐藏副标题行
 
 改文案只需编辑 `partials/ad.php`。
@@ -391,6 +393,7 @@ open_basedir=/www/wwwroot/cgtk.wjlo.cc/:/tmp/:/www/server/php/81/etc/:/www/wwwro
 
 ```php
 $AD_URL   = 'https://oc.qiyun.site/register?aff=XTCF2MLXZHZB';   // 落地页 + 推广码
+// 实际 href 走 /go.php?to=qiyun，目标地址在 go.php 的 AD_TARGETS 里
 $AD_LABEL = 'api.qiyun.site';                    // 展示的域名
 ```
 

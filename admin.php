@@ -142,6 +142,8 @@ if ($tab === 'overview') {
         'banned'       => $one("SELECT COUNT(*) FROM rate_limits WHERE blocked_until > UNIX_TIMESTAMP()"),
         'fb_pending'   => $one("SELECT COUNT(*) FROM feedback WHERE status = 0"),
         'fb_today'     => $one("SELECT COUNT(*) FROM feedback WHERE created_at >= CURDATE()"),
+        'ad_clicks'    => $one("SELECT COUNT(*) FROM request_log WHERE action = 'ad_click' AND created_at >= CURDATE()"),
+        'ad_clicks_7'  => $one("SELECT COUNT(*) FROM request_log WHERE action = 'ad_click' AND created_at >= CURDATE() - INTERVAL 6 DAY"),
     ];
     $ov['questions'] = $G['questions'];
     $ov['dedupe']    = $G['pending'];
@@ -599,6 +601,8 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
     <div class="card<?= $ov['dedupe'] > 0 ? ' seal' : '' ?>"><div class="n"><?= number_format($ov['dedupe']) ?></div><div class="l">待审重复</div></div>
     <div class="card<?= $ov['fb_pending'] > 0 ? ' seal' : '' ?>"><div class="n"><?= number_format($ov['fb_pending']) ?></div><div class="l">待处理反馈</div></div>
     <div class="card"><div class="n"><?= number_format($ov['fb_today']) ?></div><div class="l">今日反馈</div></div>
+    <div class="card"><div class="n"><?= number_format($ov['ad_clicks']) ?></div><div class="l">今日广告点击</div></div>
+    <div class="card"><div class="n"><?= number_format($ov['ad_clicks_7']) ?></div><div class="l">近 7 天广告点击</div></div>
     <div class="card<?= $G['qreq'] > 0 ? ' seal' : '' ?>"><div class="n"><?= number_format($G['qreq']) ?></div><div class="l">待审提额</div></div>
   </div>
 

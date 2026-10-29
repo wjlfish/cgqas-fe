@@ -5,12 +5,12 @@ if (!defined('CG_SITE')) {
     exit;
 }
 
-// 落地页: 注册页比登录页转化好得多(登录页对新用户是死路)
+// 经 /go.php 跳转, 便于统计点击(同一 IP 10 分钟只记一次)
 // 推广码 XTCF2MLXZHZB (需站主开启 affiliate_enabled 才会记录归属)
 $AD_URL   = 'https://oc.qiyun.site/register?aff=XTCF2MLXZHZB';
 $AD_LABEL = 'api.qiyun.site';
 ?>
-<a class="adtop" href="<?= htmlspecialchars($AD_URL, ENT_QUOTES) ?>" target="_blank" rel="noopener noreferrer nofollow sponsored"
+<a class="adtop" href="/go.php?to=qiyun" target="_blank" rel="noopener noreferrer nofollow sponsored"
    aria-label="广告：企云 API 中转站">
   <span class="adtop-tag">广告</span>
   <span class="adtop-main">Claude 老封号？GPT 订阅贵还降智？</span>
