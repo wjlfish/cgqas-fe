@@ -42,7 +42,7 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <meta name="description" content="四川大学创高体育理论考试题库检索：按关键词、科目、题型查找题目与标准答案">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23F5F3ED'/><text x='16' y='23' font-size='18' text-anchor='middle' fill='%23B03A2E' font-family='serif'>题</text></svg>">
-<link rel="stylesheet" href="/assets/style.css?v=8">
+<link rel="stylesheet" href="/assets/style.css?v=9">
 <?php if ($cap2On): ?>
 <script>
   window.AliyunCaptchaConfig = {
@@ -187,12 +187,12 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
     </div>
     <div id="captcha-element"></div>
     <button class="go solid full" id="loginSubmit" type="button">登录 / 注册</button>
-    <p class="modal-hint" id="loginHint">每个账号可搜题 150 次</p>
+    <p class="modal-hint" id="loginHint">每个账号可搜题 <?= (int) ($cfgAll['auth']['quota_default'] ?? 110) ?> 次，用完可申请提额</p>
   </div>
 </div>
 
 <!-- ══ 反馈: 右下角 ══ -->
-<button class="fb-fab" id="fbFab" type="button" aria-label="问题反馈" aria-expanded="false" aria-controls="fbPop">
+<button class="fb-fab" id="fbFab" type="button" aria-label="反馈与额度" aria-expanded="false" aria-controls="fbPop">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.3 9.3 0 0 1-3.2-.6L3.5 20.5l1.2-4.3A8.4 8.4 0 0 1 3.6 11.5a8.4 8.4 0 0 1 8.4-8.4 8.4 8.4 0 0 1 9 8.4z"></path>
@@ -201,7 +201,7 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 </button>
 <div class="fb-pop" id="fbPop" hidden role="dialog" aria-modal="false" aria-labelledby="fbPopTitle">
   <div class="fb-pop-head">
-    <span id="fbPopTitle">问题反馈</span>
+    <span id="fbPopTitle">反馈与额度</span>
     <a class="fb-pop-more" href="/feedback.php" target="_blank" rel="noopener">独立页面 ↗</a>
     <button class="fb-pop-close" id="fbPopClose" type="button" aria-label="关闭">×</button>
   </div>
@@ -209,8 +209,8 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/assets/app.js?v=7"></script>
-<script src="/assets/feedback.js?v=8"></script>
+<script src="/assets/app.js?v=8"></script>
+<script src="/assets/feedback.js?v=9"></script>
 <script>
 (function () {
   var fab = document.getElementById('fbFab');

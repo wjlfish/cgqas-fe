@@ -94,6 +94,7 @@
           <button type="button" data-tab="wrong" class="on" role="tab">错题申报</button>
           <button type="button" data-tab="bug" role="tab">Bug 反馈</button>
           <button type="button" data-tab="like" role="tab">点赞</button>
+          <button type="button" data-tab="quota" role="tab">申请提额</button>
         </nav>
 
         <section class="fb-pane" data-pane="wrong">
@@ -156,6 +157,18 @@
 
           <div class="fb-cms" data-cms></div>
         </section>
+
+        <section class="fb-pane" data-pane="quota" hidden>
+          <p class="fb-note">额度用完可以申请提额。说明用途，管理员会人工审核。</p>
+          <div class="fb-quota" data-qstat>加载中…</div>
+          <form class="fb-qform" data-qform hidden>
+            <textarea data-qreason maxlength="300" rows="3"
+                      placeholder="说明申请理由，例如：备考需要，题库还有一半没看完（至少 10 个字）"></textarea>
+            <div class="fb-acts">
+              <button type="submit" class="solid" data-qsubmit>提交申请</button>
+            </div>
+          </form>
+        </section>
       </div>`;
 
     const panes = $$('.fb-pane', root);
@@ -166,6 +179,7 @@
       tabBtns.forEach((b) => b.classList.toggle('on', b.dataset.tab === name));
       panes.forEach((p) => { p.hidden = p.dataset.pane !== name; });
       if (name === 'like') loadLike();
+      if (name === 'quota') loadQuota();
     }
     tabBtns.forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.tab)));
 
@@ -440,6 +454,73 @@
         btn.textContent = '发表';
       }
     });
+
+    /* ── 提额申请 ── */
+    async function loadQuota() {
+      const box = $('[data-qstat]', root);
+      const form = $('[data-qform]', root);
+      if (!box) return;
+      try {
+        const j = await request('quota_status', {});
+        const left = typeof j.left === 'number' ? j.left : 0;
+        let html = `当前额度 <b>${j.limit}</b> 次，已用 <b>${j.used}</b> 次，剩余 <b>${left}</b> 次`;
+        const r = j.request;
+        let allow = true;
+        if (r) {
+          if (r.status === 0) {
+            html += `<div class="fb-qnote">审核中：${esc(r.reason)}</div>`;
+            allow = false;
+          } else if (r.status === 1) {
+            html += `<div class="fb-qnote is-ok">已通过，额度提升至 ${r.granted_limit} 次</div>`;
+          } else {
+            html += `<div class="fb-qnote is-bad">上次申请被拒绝`
+                 + (r.admin_note ? `：${esc(r.admin_note)}` : '') + `</div>`;
+          }
+        }
+        box.innerHTML = html;
+        form.hidden = !allow;
+      } catch (err) {
+        if (err instanceof NeedLogin) {
+          box.innerHTML = '请先完成手机号验证。<a href="/" data-gologin>去登录</a>';
+          const a = $('[data-gologin]', root);
+          if (a) a.addEventListener('click', (e) => {
+            const b = document.getElementById('loginBtn');
+            if (b && b.offsetParent !== null) { e.preventDefault(); b.click(); }
+          });
+          form.hidden = true;
+          return;
+        }
+        box.innerHTML = esc(err.message);
+        form.hidden = true;
+      }
+    }
+
+    const qform = $('[data-qform]', root);
+    if (qform) {
+      qform.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const ta = $('[data-qreason]', root);
+        const text = ta.value.trim();
+        if (text.length < 10) { flash('quota', '请至少写 10 个字说明理由', 'warn'); return; }
+        const btn = $('[data-qsubmit]', root);
+        btn.disabled = true;
+        btn.textContent = '提交中…';
+        try {
+          const fd = new FormData();
+          fd.append('reason', text);
+          await request('quota_request', fd, true);
+          ta.value = '';
+          await loadQuota();
+          flash('quota', '已提交，等待管理员审核。', 'ok');
+        } catch (err) {
+          if (err instanceof NeedLogin) sayLogin('quota');
+          else flash('quota', err.message, 'bad');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = '提交申请';
+        }
+      });
+    }
 
     loadLike();
     loadComments();

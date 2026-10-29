@@ -13,11 +13,11 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="csrf-token" content="<?= $esc($t['token']) ?>">
 <meta name="theme-color" content="#F5F3ED">
-<title>问题反馈 · 创高题库</title>
+<title>反馈与额度 · 创高题库</title>
 <meta name="description" content="创高体育理论考试题库：错题申报、问题反馈">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23F5F3ED'/><text x='16' y='23' font-size='18' text-anchor='middle' fill='%23B03A2E' font-family='serif'>题</text></svg>">
-<link rel="stylesheet" href="/assets/style.css?v=8">
+<link rel="stylesheet" href="/assets/style.css?v=9">
 <script>
   (function(){
     try{
@@ -50,7 +50,7 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <main class="fb-page">
   <div class="shell">
     <div class="view-actions">
-      <h1 class="view-title">问题反馈</h1>
+      <h1 class="view-title">反馈与额度</h1>
     </div>
     <div id="fbRoot"></div>
   </div>
@@ -66,7 +66,7 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 </footer>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/assets/feedback.js?v=8"></script>
+<script src="/assets/feedback.js?v=9"></script>
 <script>
 (function () {
   /* 主题 */

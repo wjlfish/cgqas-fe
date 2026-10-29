@@ -175,3 +175,22 @@ CREATE TABLE IF NOT EXISTS `questions_archive` (
   PRIMARY KEY (`id`),
   KEY `k_q` (`question_id`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ═══════════════════════════════════════════════════════════
+-- 提额申请
+-- ═══════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS `quota_requests` (
+  `id`             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id`        INT UNSIGNED    NOT NULL,
+  `limit_snapshot` INT UNSIGNED    NOT NULL,
+  `used_snapshot`  INT UNSIGNED    NOT NULL,
+  `reason`         VARCHAR(300)    NOT NULL DEFAULT '',
+  `status`         TINYINT         NOT NULL DEFAULT 0 COMMENT '0待审 1通过 2拒绝',
+  `granted_limit`  INT UNSIGNED    DEFAULT NULL,
+  `admin_note`     VARCHAR(255)    NOT NULL DEFAULT '',
+  `created_at`     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `decided_at`     DATETIME        DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `k_user` (`user_id`,`created_at`),
+  KEY `k_status` (`status`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

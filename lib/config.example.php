@@ -63,7 +63,7 @@ return [
         'require'         => false,  // 短信配好后改 true
         'cookie'          => 'cg_sess',
         'session_ttl'     => 604800,   // 登录有效期 7 天
-        'quota_default'   => 150,      // 每个用户搜题次数
+        'quota_default'   => 110,      // 每个用户搜题次数
         'sms_ttl'         => 300,      // 验证码 5 分钟
         'sms_max_attempts'=> 5,
         'sms_phone_gap'   => 60,       // 同一手机号发送间隔

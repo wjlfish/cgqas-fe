@@ -129,7 +129,8 @@ if (in_array($action, $NEED_LOGIN, true) && $AUTH_REQUIRED) {
 }
 
 // ── 4.6 反馈类: 只需登录, 不消耗搜题额度 ──
-$NEED_AUTH = ['feedback_submit', 'feedback_like', 'feedback_comment'];
+$NEED_AUTH = ['feedback_submit', 'feedback_like', 'feedback_comment',
+                'quota_request', 'quota_status'];
 if (in_array($action, $NEED_AUTH, true) && $AUTH_REQUIRED && !$me) {
     log_request($action, $_GET, 401, (int) ((microtime(true) - $t0) * 1000));
     fail('请先完成手机号验证', 401, ['reason' => 'login_required']);
@@ -447,6 +448,76 @@ try {
             $r['id'] = (int) $r['id'];
             $r['options'] = $r['options'] ? json_decode($r['options'], true) : [];
             $out = ['ok' => true, 'item' => $r];
+            break;
+        }
+
+        // ─────────── 提额申请 ───────────
+        case 'quota_request': {
+            $reason = trim((string) ($_POST['reason'] ?? ''));
+            if (mb_strlen($reason) < 10) {
+                fail('请说明申请理由（至少 10 个字）', 400, ['reason' => 'reason_short']);
+            }
+            if (mb_strlen($reason) > 300) {
+                fail('理由最多 300 字', 400, ['reason' => 'reason_long']);
+            }
+            $uid = (int) $me['id'];
+
+            $st = $pdo->prepare('SELECT id FROM quota_requests WHERE user_id = ? AND status = 0 LIMIT 1');
+            $st->execute([$uid]);
+            if ($st->fetchColumn()) {
+                fail('你已有一条待审核的申请，请等待处理', 400, ['reason' => 'pending_exists']);
+            }
+            $st = $pdo->prepare(
+                'SELECT COUNT(*) FROM quota_requests
+                 WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)'
+            );
+            $st->execute([$uid]);
+            if ((int) $st->fetchColumn() >= 3) {
+                fail('30 天内最多申请 3 次', 429, ['reason' => 'too_many_requests']);
+            }
+
+            $st = $pdo->prepare('SELECT searches_used, searches_limit FROM users WHERE id = ?');
+            $st->execute([$uid]);
+            $u = $st->fetch() ?: ['searches_used' => 0, 'searches_limit' => 0];
+
+            $pdo->prepare(
+                'INSERT INTO quota_requests (user_id, limit_snapshot, used_snapshot, reason)
+                 VALUES (?,?,?,?)'
+            )->execute([$uid, (int) $u['searches_limit'], (int) $u['searches_used'], $reason]);
+
+            $out = ['ok' => true, 'id' => (int) $pdo->lastInsertId()];
+            break;
+        }
+
+        // ─────────── 提额状态 ───────────
+        case 'quota_status': {
+            $uid = (int) $me['id'];
+            $st = $pdo->prepare('SELECT searches_used, searches_limit FROM users WHERE id = ?');
+            $st->execute([$uid]);
+            $u = $st->fetch() ?: ['searches_used' => 0, 'searches_limit' => 0];
+
+            $st = $pdo->prepare(
+                'SELECT id, status, reason, granted_limit, admin_note, created_at, decided_at
+                 FROM quota_requests WHERE user_id = ? ORDER BY id DESC LIMIT 1'
+            );
+            $st->execute([$uid]);
+            $req = $st->fetch();
+
+            $out = [
+                'ok'      => true,
+                'limit'   => (int) $u['searches_limit'],
+                'used'    => (int) $u['searches_used'],
+                'left'    => max(0, (int) $u['searches_limit'] - (int) $u['searches_used']),
+                'request' => $req ? [
+                    'id'            => (int) $req['id'],
+                    'status'        => (int) $req['status'],
+                    'reason'        => (string) $req['reason'],
+                    'granted_limit' => $req['granted_limit'] !== null ? (int) $req['granted_limit'] : null,
+                    'admin_note'    => (string) $req['admin_note'],
+                    'created_at'    => (string) $req['created_at'],
+                    'decided_at'    => $req['decided_at'],
+                ] : null,
+            ];
             break;
         }
 

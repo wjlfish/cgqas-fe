@@ -289,7 +289,7 @@
     list.innerHTML = `
       <li class="empty">
         <span class="big">额</span>
-        <p class="empty-txt">你的 ${info.limit || 150} 次搜题机会已用完</p>
+        <p class="empty-txt">你的 ${info.limit || 110} 次搜题机会已用完</p>
         <p class="empty-sub">如需更多额度请联系管理员</p>
       </li>`;
     $('#meta').textContent = '额度已用尽';
@@ -448,7 +448,7 @@
       state.pages = j.pages;
       if (typeof j.left === 'number' && currentUser) {
         currentUser.left = j.left;
-        currentUser.used = Math.max(0, (currentUser.limit || 150) - j.left);
+        currentUser.used = Math.max(0, (currentUser.limit || 110) - j.left);
         paintAuth();
       }
 

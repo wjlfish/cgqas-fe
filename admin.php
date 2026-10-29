@@ -53,6 +53,7 @@ $TABS = [
     'sms'      => '短信记录',
     'limits'   => '限流封禁',
     'feedback' => '反馈',
+    'quota'    => '提额',
     'dedupe'   => '去重审阅',
 ];
 if (!isset($TABS[$tab])) {
@@ -75,6 +76,7 @@ try {
 // 全局计数(各页签都要用到)
 $G = [
     'questions' => (int) $pdo->query("SELECT COUNT(*) FROM questions")->fetchColumn(),
+    'qreq'      => (int) $pdo->query("SELECT COUNT(*) FROM quota_requests WHERE status = 0")->fetchColumn(),
     'pending'   => (int) $pdo->query(
         "SELECT COUNT(*) FROM dedupe_pairs p
          JOIN questions qa ON qa.id = p.a_id
@@ -251,6 +253,26 @@ if ($tab === 'limits') {
     )->fetchAll();
 }
 
+if ($tab === 'quota') {
+    $qst = (string) ($_GET['st'] ?? '');
+    $w = ['1=1'];
+    $par = [];
+    if ($qst !== '') { $w[] = 'r.status = ?'; $par[] = (int) $qst; }
+    $where = implode(' AND ', $w);
+    $st = $pdo->prepare("SELECT COUNT(*) FROM quota_requests r WHERE $where");
+    $st->execute($par);
+    $total = (int) $st->fetchColumn();
+    $st = $pdo->prepare(
+        "SELECT r.id, r.limit_snapshot, r.used_snapshot, r.reason, r.status,
+                r.granted_limit, r.admin_note, r.created_at, r.decided_at,
+                u.phone, u.searches_used, u.searches_limit
+         FROM quota_requests r LEFT JOIN users u ON u.id = r.user_id
+         WHERE $where ORDER BY r.status ASC, r.id DESC LIMIT $LIM OFFSET " . ($page * $LIM)
+    );
+    $st->execute($par);
+    $rows = $st->fetchAll();
+}
+
 if ($tab === 'feedback') {
     $fkind = (string) ($_GET['kind'] ?? '');
     $fstat = (string) ($_GET['st'] ?? '');
@@ -339,6 +361,9 @@ if ($tab === 'dedupe') {
 .fb-ok{ font-size:11.5px; letter-spacing:.04em; color:var(--ink-2);
   border:1px solid var(--rule); padding:2px 8px; margin-right:5px; transition:.2s var(--ease) }
 .fb-ok:hover{ border-color:var(--ink); color:var(--ink) }
+.q-ok{ font-size:11.5px; letter-spacing:.04em; color:var(--ink-2);
+  border:1px solid var(--rule); padding:2px 8px; margin-right:5px; transition:.2s var(--ease) }
+.q-ok:hover{ border-color:var(--ink); color:var(--ink) }
 .qmodal{ position:fixed; inset:0; z-index:400; display:grid; place-items:center; padding:20px }
 .qmodal[hidden]{ display:none }
 .qmodal-mask{ position:absolute; inset:0; background:rgba(23,21,15,.42) }
@@ -544,6 +569,9 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
           if ($k === 'dedupe' && $G['pending'] > 0) {
               echo '<b>' . (int) $G['pending'] . '</b>';
           }
+          if ($k === 'quota' && $G['qreq'] > 0) {
+              echo '<b>' . (int) $G['qreq'] . '</b>';
+          }
         ?>
       </a>
     <?php endforeach; ?>
@@ -566,6 +594,7 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
     <div class="card<?= $ov['dedupe'] > 0 ? ' seal' : '' ?>"><div class="n"><?= number_format($ov['dedupe']) ?></div><div class="l">待审重复</div></div>
     <div class="card<?= $ov['fb_pending'] > 0 ? ' seal' : '' ?>"><div class="n"><?= number_format($ov['fb_pending']) ?></div><div class="l">待处理反馈</div></div>
     <div class="card"><div class="n"><?= number_format($ov['fb_today']) ?></div><div class="l">今日反馈</div></div>
+    <div class="card<?= $G['qreq'] > 0 ? ' seal' : '' ?>"><div class="n"><?= number_format($G['qreq']) ?></div><div class="l">待审提额</div></div>
   </div>
 
   <div class="sec"><h2>用量最高的用户</h2><span class="meta">按已用次数排序</span></div>
@@ -776,6 +805,53 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
     <?php endforeach; ?>
     <?php if (!$budget): ?><tr><td colspan="5" class="empty">暂无数据</td></tr><?php endif; ?>
   </table></div>
+
+<?php elseif ($tab === 'quota'): ?>
+
+  <form class="filt" method="get">
+    <input type="hidden" name="tab" value="quota">
+    <select name="st">
+      <option value="">全部状态</option>
+      <option value="0" <?= (($_GET['st'] ?? '') === '0') ? 'selected' : '' ?>>待审核</option>
+      <option value="1" <?= (($_GET['st'] ?? '') === '1') ? 'selected' : '' ?>>已通过</option>
+      <option value="2" <?= (($_GET['st'] ?? '') === '2') ? 'selected' : '' ?>>已拒绝</option>
+    </select>
+    <button type="submit">筛选</button>
+    <span class="meta">共 <?= number_format($total) ?> 条</span>
+  </form>
+  <div class="tw"><table>
+    <tr><th>时间</th><th>用户</th><th>额度(当时/已用)</th><th>理由</th>
+        <th>状态</th><th>操作</th></tr>
+    <?php foreach ($rows as $r): $st = (int) $r['status']; ?>
+      <tr>
+        <td class="num"><?= $esc($r['created_at']) ?></td>
+        <td class="mono"><?= $esc($r['phone'] ?? '—') ?></td>
+        <td class="num"><?= (int) $r['limit_snapshot'] ?> / <?= (int) $r['used_snapshot'] ?>
+          <?php if ($r['searches_limit'] !== null): ?>
+            <span style="color:var(--ink-3)">（现 <?= (int) $r['searches_limit'] ?>）</span>
+          <?php endif; ?>
+        </td>
+        <td style="max-width:340px;white-space:pre-wrap"><?= $esc($r['reason']) ?></td>
+        <td>
+          <?= $st === 0 ? '<span class="tag bad">待审核</span>'
+             : ($st === 1 ? '<span class="tag ok">已通过 → ' . (int) $r['granted_limit'] . '</span>'
+             : '<span class="tag">已拒绝</span>') ?>
+          <?php if ($r['admin_note'] !== ''): ?>
+            <div style="color:var(--ink-3);font-size:11px;margin-top:3px"><?= $esc($r['admin_note']) ?></div>
+          <?php endif; ?>
+        </td>
+        <td class="num">
+          <?php if ($st === 0): ?>
+            <button class="q-ok" data-id="<?= (int) $r['id'] ?>" data-act="approve"
+                    data-cur="<?= (int) $r['limit_snapshot'] ?>" type="button">通过</button>
+            <button class="q-ok" data-id="<?= (int) $r['id'] ?>" data-act="reject" type="button">拒绝</button>
+          <?php endif; ?>
+        </td>
+      </tr>
+    <?php endforeach; ?>
+    <?php if (!$rows): ?><tr><td colspan="6" class="empty">暂无申请</td></tr><?php endif; ?>
+  </table></div>
+  <?= nav('quota', $page, (int) ceil($total / $LIM), ['st' => $_GET['st'] ?? '']) ?>
 
 <?php elseif ($tab === 'feedback'): ?>
 
@@ -1236,6 +1312,34 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
 
   document.querySelectorAll('.fb-fix').forEach(function (b) {
     b.addEventListener('click', function () { openQ(b.dataset.qid, b.dataset.id); });
+  });
+
+  document.querySelectorAll('.q-ok').forEach(function (b) {
+    b.addEventListener('click', async function () {
+      var act = b.dataset.act;
+      var fd = new FormData();
+      fd.append('action', 'qr_decide');
+      fd.append('id', b.dataset.id);
+      fd.append('act', act);
+      if (act === 'approve') {
+        var v = prompt('设置该用户的新额度（当前 ' + b.dataset.cur + '）', '150');
+        if (v === null) return;
+        var n = parseInt(v, 10);
+        if (!n || n < 1 || n > 1000) { alert('额度需为 1-1000 的整数'); return; }
+        fd.append('limit', n);
+      } else {
+        var note = prompt('拒绝理由（会展示给用户，可留空）', '');
+        if (note === null) return;
+        fd.append('note', note);
+      }
+      b.disabled = true;
+      try {
+        const r = await fetch('/admin_api.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.error || '失败');
+        location.reload();
+      } catch (e) { toast(e.message); b.disabled = false; }
+    });
   });
 
   document.querySelectorAll('.fb-ok:not(.fb-fix)').forEach(function (b) {

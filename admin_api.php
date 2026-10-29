@@ -363,6 +363,50 @@ if ($act === 'q_delete') {
     json_out(['ok' => true, 'deleted' => $qid, 'refunded' => $refunded]);
 }
 
+
+/* ── 提额申请: 通过 / 拒绝 ── */
+if ($act === 'qr_decide') {
+    $id   = (int) ($_POST['id'] ?? 0);
+    $what = (string) ($_POST['act'] ?? '');
+    if ($id <= 0 || !in_array($what, ['approve', 'reject'], true)) {
+        fail('invalid params', 400);
+    }
+    $st = $pdo->prepare('SELECT * FROM quota_requests WHERE id = ?');
+    $st->execute([$id]);
+    $r = $st->fetch();
+    if (!$r) {
+        fail('申请不存在', 404);
+    }
+    if ((int) $r['status'] !== 0) {
+        fail('该申请已处理', 400);
+    }
+
+    $pdo->beginTransaction();
+    try {
+        if ($what === 'approve') {
+            $limit = (int) ($_POST['limit'] ?? 0);
+            if ($limit < 1 || $limit > 1000) {
+                fail('额度需为 1-1000 的整数', 400);
+            }
+            $pdo->prepare('UPDATE users SET searches_limit = ? WHERE id = ?')
+                ->execute([$limit, (int) $r['user_id']]);
+            $pdo->prepare(
+                'UPDATE quota_requests SET status = 1, granted_limit = ?, decided_at = NOW() WHERE id = ?'
+            )->execute([$limit, $id]);
+        } else {
+            $note = mb_substr(trim((string) ($_POST['note'] ?? '')), 0, 240);
+            $pdo->prepare(
+                'UPDATE quota_requests SET status = 2, admin_note = ?, decided_at = NOW() WHERE id = ?'
+            )->execute([$note, $id]);
+        }
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        fail('db error: ' . $e->getMessage(), 500);
+    }
+    json_out(['ok' => true]);
+}
+
 if ($act === 'fb_status') {
     $id  = (int) ($_POST['id'] ?? 0);
     $stt = (int) ($_POST['status'] ?? 0);
