@@ -376,6 +376,17 @@ open_basedir=/www/wwwroot/cgtk.wjlo.cc/:/tmp/:/www/server/php/81/etc/:/www/wwwro
 
 拦截记录写 `/www/wwwlogs/cgtk-geo-block.log`。
 
+## 顶部广告位
+
+导航栏下方一条细广告，位于搜索工具栏之上，滚动时随页面一起移出（不吸顶）。
+
+- 文件：`partials/ad.php`，由 `index.php` / `feedback.php` 引入
+- `partials/` 目录带 `CG_SITE` 常量守卫，直接访问返回 404
+- 链接带 `rel="noopener noreferrer nofollow sponsored"`，并标注「广告」
+- 样式类 `.adtop`，跟随纸/墨主题；移动端隐藏副标题行
+
+改文案只需编辑 `partials/ad.php`。
+
 ## 安全与反爬
 
 站点是公开的只读检索服务，但题库不能让人整库拖走。为此做了分层设计：

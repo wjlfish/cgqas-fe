@@ -3,6 +3,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/ratelimit.php';
 
+define('CG_SITE', true);
+
 require_once __DIR__ . '/lib/geo.php';
 
 // 境外 IP: 不渲染任何功能, 直接给提示页
@@ -25,7 +27,7 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <meta name="description" content="创高体育理论考试题库：错题申报、问题反馈">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23F5F3ED'/><text x='16' y='23' font-size='18' text-anchor='middle' fill='%23B03A2E' font-family='serif'>题</text></svg>">
-<link rel="stylesheet" href="/assets/style.css?v=9">
+<link rel="stylesheet" href="/assets/style.css?v=10">
 <script>
   (function(){
     try{
@@ -54,6 +56,8 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
     </button>
   </div>
 </header>
+
+<?php require __DIR__ . '/partials/ad.php'; ?>
 
 <main class="fb-page">
   <div class="shell">
