@@ -8,14 +8,14 @@ if (!defined('CG_SITE')) {
 // 每块广告: key 对应 go.php 的 AD_TARGETS
 $ADS = [
     [
-        'to'   => 'qiyun',
-        'main' => 'Claude 老封号？GPT 订阅贵还降智？',
-        'sub'  => '中转站国内直连 · 一个 Key 用遍 DeepSeek / GPT-6 Astra / Claude Fable / Opus',
-    ],
-    [
         'to'   => 'skyrouter',
         'main' => '注册免费送3元，联系客服免费远程接入',
         'sub'  => 'skyrouter · 同样的模型花更少的钱 · 国内直连 · 一个 Key 通用主流模型',
+    ],
+    [
+        'to'   => 'qiyun',
+        'main' => 'Claude 老封号？GPT 订阅贵还降智？',
+        'sub'  => '中转站国内直连 · 一个 Key 用遍 DeepSeek / GPT-6 Astra / Claude Fable / Opus',
     ],
 ];
 ?>
