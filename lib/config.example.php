@@ -112,5 +112,6 @@ return [
         'log'       => '/www/wwwlogs/cgtk-geo-block.log',
         'allow_ips' => [],   // 例外 IP, 管理员 cookie 始终放行
         'test_ip'   => '',   // 仅联调用: 非空时强制按该 IP 判定
+        'exempt_admin' => false, // 是否让管理员 cookie 绕过地域限制(公开页面)
     ],
 ];

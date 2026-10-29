@@ -138,14 +138,19 @@ function geo_exempt(string $ip): bool
             return true;
         }
     }
-    // 管理员 cookie 放行（境外也能运维后台）
-    try {
-        require_once __DIR__ . '/admin.php';
-        if (function_exists('admin_logged_in') && admin_logged_in()) {
-            return true;
+    // 后台(admin.php / admin_api.php)本身不经过地域检查, 所以这里不再按
+    // admin cookie 放行 —— 否则管理员在境外能正常访问公开页面, 无法自测。
+    // 如确需放行, 打开 config.geo.exempt_admin。
+    if (!empty($g['exempt_admin'])) {
+        try {
+            require_once __DIR__ . '/admin.php';
+            if (function_exists('admin_logged_in') && admin_logged_in()) {
+                geo_log('GEO_EXEMPT_ADMIN ' . $ip);
+                return true;
+            }
+        } catch (Throwable $e) {
+            // 忽略
         }
-    } catch (Throwable $e) {
-        // 忽略
     }
     return false;
 }
