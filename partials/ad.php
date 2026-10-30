@@ -19,21 +19,21 @@ $ADS = [
     ],
 ];
 ?>
-<div class="adgrid">
+<div class="promo-grid">
   <?php foreach ($ADS as $ad): ?>
-    <a class="adcard" href="/go.php?to=<?= htmlspecialchars($ad['to'], ENT_QUOTES) ?>"
+    <a class="promo-card" href="/go.php?to=<?= htmlspecialchars($ad['to'], ENT_QUOTES) ?>"
        target="_blank" rel="noopener noreferrer nofollow sponsored">
-      <span class="adcard-top">
-        <span class="adcard-tag">广告</span>
-        <span class="adcard-main"><?= htmlspecialchars($ad['main'], ENT_QUOTES) ?></span>
-        <span class="adcard-cta">免费注册
+      <span class="promo-card-top">
+        <span class="promo-tag">广告</span>
+        <span class="promo-main"><?= htmlspecialchars($ad['main'], ENT_QUOTES) ?></span>
+        <span class="promo-cta">免费注册
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M5 12h14M13 6l6 6-6 6"></path>
           </svg>
         </span>
       </span>
-      <span class="adcard-sub"><?= htmlspecialchars($ad['sub'], ENT_QUOTES) ?></span>
+      <span class="promo-sub"><?= htmlspecialchars($ad['sub'], ENT_QUOTES) ?></span>
     </a>
   <?php endforeach; ?>
 </div>

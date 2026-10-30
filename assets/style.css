@@ -113,51 +113,51 @@ input,select{ font:inherit; color:inherit }
 .reset-btn:hover{ color:var(--seal) }
 
 /* 顶部广告位 */
-.adgrid{
+.promo-grid{
   display:grid; grid-template-columns:1fr 1fr; gap:1px;
   width:min(var(--shell), calc(100% - var(--gut)*2)); margin:0 auto;
   background:var(--rule); border-top:1px solid var(--rule);
   border-bottom:1px solid var(--rule);
 }
-.adcard{
+.promo-card{
   display:flex; flex-direction:column; gap:5px;
   padding:12px 16px; background:var(--paper); text-decoration:none; color:inherit;
   transition:background-color .2s var(--ease);
 }
-.adcard:hover{ background:var(--paper-2) }
-.adcard-top{ display:flex; align-items:center; gap:12px; flex-wrap:nowrap; min-width:0 }
-.adcard-tag{
+.promo-card:hover{ background:var(--paper-2) }
+.promo-card-top{ display:flex; align-items:center; gap:12px; flex-wrap:nowrap; min-width:0 }
+.promo-tag{
   flex:0 0 auto; font-size:9.5px; letter-spacing:.16em; color:var(--seal);
   border:1px solid rgba(176,58,46,.35); padding:1px 5px; line-height:15px;
   background:var(--seal-wash);
 }
-.adcard-main{
+.promo-main{
   flex:1 1 auto; min-width:0;
   font-family:"Songti SC","Source Han Serif SC",STSong,SimSun,serif;
   font-size:15px; font-weight:600; color:var(--ink); letter-spacing:.01em;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
-.adcard:hover .adcard-main{ color:var(--seal) }
-.adcard-cta{
+.promo-card:hover .promo-main{ color:var(--seal) }
+.promo-cta{
   flex:0 0 auto; display:inline-flex; align-items:center; gap:4px;
   font-size:12px; letter-spacing:.06em; color:var(--paper);
   background:var(--ink); padding:4px 11px;
   transition:background-color .22s var(--ease);
 }
-.adcard:hover .adcard-cta{ background:var(--seal) }
-.adcard-cta svg{ width:11px; height:11px }
-.adcard-sub{
+.promo-card:hover .promo-cta{ background:var(--seal) }
+.promo-cta svg{ width:11px; height:11px }
+.promo-sub{
   font-size:11.5px; color:var(--ink-3); letter-spacing:.02em; line-height:1.6;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
   overflow:hidden;
 }
 @media(max-width:760px){
-  .adgrid{ grid-template-columns:1fr }
-  .adcard{ padding:11px 0 }
-  .adcard-top{ flex-wrap:wrap; gap:9px }
-  .adcard-main{ flex:1 1 100%; font-size:14.5px; order:3; white-space:normal }
-  .adcard-cta{ margin-left:auto }
-  .adcard-sub{ font-size:11px }
+  .promo-grid{ grid-template-columns:1fr }
+  .promo-card{ padding:11px 0 }
+  .promo-card-top{ flex-wrap:wrap; gap:9px }
+  .promo-main{ flex:1 1 100%; font-size:14.5px; order:3; white-space:normal }
+  .promo-cta{ margin-left:auto }
+  .promo-sub{ font-size:11px }
 }
 
 /* 视图 */

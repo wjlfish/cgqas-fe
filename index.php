@@ -7,6 +7,9 @@ define('CG_SITE', true);
 
 require_once __DIR__ . '/lib/geo.php';
 
+// 页面不加缓存, 避免 WebView/浏览器读到旧版(比如还没广告的版本)
+header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
+
 // 境外 IP: 不渲染任何功能, 直接给提示页
 if (geo_blocked()) {
     geo_blocked_page();
@@ -52,7 +55,7 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <meta name="description" content="四川大学创高体育理论考试题库检索：按关键词、科目、题型查找题目与标准答案">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23F5F3ED'/><text x='16' y='23' font-size='18' text-anchor='middle' fill='%23B03A2E' font-family='serif'>题</text></svg>">
-<link rel="stylesheet" href="/assets/style.css?v=13">
+<link rel="stylesheet" href="/assets/style.css?v=14">
 <?php if ($cap2On): ?>
 <script>
   window.AliyunCaptchaConfig = {

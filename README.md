@@ -388,7 +388,10 @@ open_basedir=/www/wwwroot/cgtk.wjlo.cc/:/tmp/:/www/server/php/81/etc/:/www/wwwro
 - 去重按「IP + 广告位」：同一个人点两块广告都会计数，同一块 10 分钟内只记一次
 - 后台概览「广告点击」表按广告位拆分，给出今日 / 近 7 天 / 最近点击
   （白名单跳转，非法目标 404；同一 IP 10 分钟内只记一次）
-- 样式类 `.adtop`，跟随纸/墨主题；移动端隐藏副标题行
+- 样式类 `.promo-grid` / `.promo-card`，跟随纸/墨主题
+- **类名不能以 `ad` 开头**：EasyList 里有 `##.adcard`、`##.adtop` 等精确规则，
+  装 uBlock/AdGuard 的用户会被整块隐藏。改名为 `promo-*` 后两个列表均无命中
+- 页面响应带 `Cache-Control: no-cache`，避免 WebView 读到没有广告的旧版本
 
 改文案只需编辑 `partials/ad.php`。
 
