@@ -6,6 +6,7 @@ require_once __DIR__ . '/lib/ratelimit.php';
 define('CG_SITE', true);
 
 require_once __DIR__ . '/lib/geo.php';
+require_once __DIR__ . '/lib/asset.php';
 
 // 页面不加缓存, 避免 WebView/浏览器读到旧版(比如还没广告的版本)
 header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
@@ -55,7 +56,7 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <meta name="description" content="四川大学创高体育理论考试题库检索：按关键词、科目、题型查找题目与标准答案">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23F5F3ED'/><text x='16' y='23' font-size='18' text-anchor='middle' fill='%23B03A2E' font-family='serif'>题</text></svg>">
-<link rel="stylesheet" href="/assets/style.css?v=14">
+<link rel="stylesheet" href="<?= asset('style.css') ?>">
 <?php if ($cap2On): ?>
 <script>
   window.AliyunCaptchaConfig = {
@@ -224,8 +225,8 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/assets/app.js?v=8"></script>
-<script src="/assets/feedback.js?v=9"></script>
+<script src="<?= asset('app.js') ?>"></script>
+<script src="<?= asset('feedback.js') ?>"></script>
 <script>
 (function () {
   var fab = document.getElementById('fbFab');

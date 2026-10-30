@@ -10,6 +10,11 @@ sql/*.local.sql
 creds.json
 proxies.json
 
+# 静态资源构建产物(由 ops/build-assets.php 生成)
+assets/*.[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f].css
+assets/*.[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f].js
+assets/manifest.json
+
 # 运行产物
 *.log
 .DS_Store
