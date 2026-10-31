@@ -159,6 +159,27 @@ if ($tab === 'overview') {
         "SELECT phone, created_at, inet6_ntoa(last_ip) ip
          FROM users ORDER BY id DESC LIMIT 8"
     )->fetchAll();
+    // 近 7 日趋势
+    $days = [];
+    for ($i = 6; $i >= 0; $i--) { $days[] = date('Y-m-d', strtotime("-{$i} day")); }
+    $trend = [];
+    $series = [
+        'users'    => "SELECT DATE(created_at) d, COUNT(*) n FROM users
+                       WHERE created_at >= CURDATE() - INTERVAL 6 DAY GROUP BY d",
+        'searches' => "SELECT DATE(created_at) d, COUNT(*) n FROM search_logs
+                       WHERE created_at >= CURDATE() - INTERVAL 6 DAY GROUP BY d",
+        'views'    => "SELECT DATE(created_at) d, COUNT(*) n FROM access_logs
+                       WHERE created_at >= CURDATE() - INTERVAL 6 DAY GROUP BY d",
+        'requests' => "SELECT DATE(created_at) d, COUNT(*) n FROM request_log
+                       WHERE created_at >= CURDATE() - INTERVAL 6 DAY GROUP BY d",
+        'clicks'   => "SELECT DATE(created_at) d, COUNT(*) n FROM request_log
+                       WHERE action = 'ad_click' AND created_at >= CURDATE() - INTERVAL 6 DAY GROUP BY d",
+    ];
+    foreach ($series as $k => $sql) {
+        $map = [];
+        foreach ($pdo->query($sql) as $r) { $map[(string) $r['d']] = (int) $r['n']; }
+        $trend[$k] = ['vals' => array_map(static fn($d) => $map[$d] ?? 0, $days), 'total' => array_sum($map)];
+    }
     $adStats = $pdo->query(
         "SELECT query AS target,
                 SUM(created_at >= CURDATE()) AS today,
@@ -455,6 +476,21 @@ if ($tab === 'dedupe') {
 .qm-fb{ margin-top:16px; padding:11px 12px; background:var(--paper-2);
   border-left:2px solid var(--seal); font-size:12px; line-height:1.8; color:var(--ink-2) }
 .qm-fb .h{ color:var(--ink-3); font-size:10.5px; letter-spacing:.12em; margin-bottom:5px }
+.trend{ border:1px solid var(--rule); padding:14px 14px 10px; background:var(--paper) }
+.trend-row{ display:grid; grid-template-columns:76px 1fr 70px; gap:12px;
+  align-items:center; padding:5px 0 }
+.trend-label{ font-size:11.5px; color:var(--ink-3); letter-spacing:.04em }
+.trend-bars{ display:flex; align-items:flex-end; gap:3px; height:34px }
+.trend-bars .tb{ flex:1; min-width:0; background:var(--rule); transition:background-color .2s var(--ease) }
+.trend-bars .tb:hover{ background:var(--ink-3) }
+.trend-bars .tb.today{ background:var(--seal) }
+.trend-total{ font-size:12px; color:var(--ink-2); text-align:right;
+  font-variant-numeric:tabular-nums }
+.trend-axis{ display:grid; grid-template-columns:76px 1fr 70px; gap:12px;
+  margin-top:6px; padding-top:6px; border-top:1px solid var(--rule-soft) }
+.trend-days{ display:flex; justify-content:space-between; font-size:10px;
+  color:var(--ink-3); font-variant-numeric:tabular-nums }
+.trend-days .is-today{ color:var(--seal); font-weight:600 }
 .healthbar{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
   margin:18px 0 0; padding:9px 12px; border-left:2px solid var(--rule);
   background:var(--paper-2); font-size:12px; color:var(--ink-2) }
@@ -599,36 +635,83 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
 
 <?php if ($tab === 'overview'): ?>
 
+  <div class="sec"><h2>今日</h2><span class="meta">实时数据</span></div>
+  <div class="cards">
+    <div class="card"><div class="n"><?= number_format($ov['users_today']) ?></div><div class="l">新增用户</div></div>
+    <div class="card"><div class="n"><?= number_format($ov['online']) ?></div><div class="l">在线会话</div></div>
+    <div class="card"><div class="n"><?= number_format($ov['pv_today']) ?></div><div class="l">页面浏览</div></div>
+    <div class="card"><div class="n"><?= number_format($ov['uv_today']) ?></div><div class="l">访客 IP</div></div>
+    <div class="card"><div class="n"><?= number_format($ov['req_today']) ?></div><div class="l">接口请求</div></div>
+    <div class="card"><div class="n"><?= number_format($ov['search_today']) ?></div><div class="l">检索次数</div></div>
+    <div class="card"><div class="n"><?= number_format($ov['items_today']) ?></div><div class="l">返回题数</div></div>
+    <div class="card"><div class="n"><?= number_format($ov['sms_today']) ?></div><div class="l">短信</div></div>
+    <div class="card"><div class="n"><?= number_format($ov['ad_clicks']) ?></div><div class="l">广告点击</div></div>
+  </div>
+
+  <div class="sec"><h2>待办理</h2><span class="meta">需要人工处理</span></div>
+  <div class="cards">
+    <div class="card<?= $ov['fb_pending'] > 0 ? ' seal' : '' ?>"><div class="n"><?= number_format($ov['fb_pending']) ?></div><div class="l">待处理反馈</div></div>
+    <div class="card<?= $G['qreq'] > 0 ? ' seal' : '' ?>"><div class="n"><?= number_format($G['qreq']) ?></div><div class="l">待审提额</div></div>
+    <div class="card<?= $ov['dedupe'] > 0 ? ' seal' : '' ?>"><div class="n"><?= number_format($ov['dedupe']) ?></div><div class="l">待审重复</div></div>
+    <div class="card<?= $ov['banned'] > 0 ? ' seal' : '' ?>"><div class="n"><?= number_format($ov['banned']) ?></div><div class="l">当前封禁</div></div>
+  </div>
+
+  <div class="sec"><h2>近 7 天趋势</h2><span class="meta"><?= $esc($days[0]) ?> — <?= $esc($days[6]) ?></span></div>
+  <div class="trend">
+    <?php
+      $trendRows = [
+          'users'    => '新增用户',
+          'searches' => '检索次数',
+          'views'    => '页面浏览',
+          'requests' => '接口请求',
+          'clicks'   => '广告点击',
+      ];
+      foreach ($trendRows as $k => $label):
+        $vals = $trend[$k]['vals'];
+        $max  = max(1, max($vals));
+    ?>
+      <div class="trend-row">
+        <span class="trend-label"><?= $esc($label) ?></span>
+        <span class="trend-bars">
+          <?php foreach ($vals as $i => $v): ?>
+            <span class="tb<?= $i === 6 ? ' today' : '' ?>"
+                  style="height:<?= max(2, (int) round($v / $max * 100)) ?>%"
+                  title="<?= $esc($days[$i]) ?>：<?= number_format($v) ?>"></span>
+          <?php endforeach; ?>
+        </span>
+        <span class="trend-total"><?= number_format($trend[$k]['total']) ?></span>
+      </div>
+    <?php endforeach; ?>
+    <div class="trend-axis">
+      <span></span>
+      <span class="trend-days">
+        <?php foreach ($days as $i => $d): ?>
+          <span class="<?= $i === 6 ? 'is-today' : '' ?>"><?= substr($d, 5) ?></span>
+        <?php endforeach; ?>
+      </span>
+      <span></span>
+    </div>
+  </div>
+
+  <div class="sec"><h2>累计</h2></div>
   <div class="cards">
     <div class="card"><div class="n"><?= number_format($ov['users']) ?></div><div class="l">注册用户</div></div>
-    <div class="card"><div class="n"><?= number_format($ov['users_today']) ?></div><div class="l">今日新增</div></div>
-    <div class="card"><div class="n"><?= number_format($ov['online']) ?></div><div class="l">在线会话</div></div>
-    <div class="card"><div class="n"><?= number_format($ov['pv_today']) ?></div><div class="l">今日页面浏览</div></div>
-    <div class="card"><div class="n"><?= number_format($ov['uv_today']) ?></div><div class="l">今日访客 IP</div></div>
-    <div class="card"><div class="n"><?= number_format($ov['req_today']) ?></div><div class="l">今日接口请求</div></div>
-    <div class="card"><div class="n"><?= number_format($ov['ips_today']) ?></div><div class="l">今日接口 IP</div></div>
-    <div class="card"><div class="n"><?= number_format($ov['search_today']) ?></div><div class="l">今日检索次数</div></div>
-    <div class="card"><div class="n"><?= number_format($ov['items_today']) ?></div><div class="l">今日返回题数</div></div>
-    <div class="card"><div class="n"><?= number_format($ov['sms_today']) ?></div><div class="l">今日短信</div></div>
-    <div class="card<?= $ov['banned'] > 0 ? ' seal' : '' ?>"><div class="n"><?= number_format($ov['banned']) ?></div><div class="l">当前封禁</div></div>
-    <div class="card<?= $ov['dedupe'] > 0 ? ' seal' : '' ?>"><div class="n"><?= number_format($ov['dedupe']) ?></div><div class="l">待审重复</div></div>
-    <div class="card<?= $ov['fb_pending'] > 0 ? ' seal' : '' ?>"><div class="n"><?= number_format($ov['fb_pending']) ?></div><div class="l">待处理反馈</div></div>
+    <div class="card"><div class="n"><?= number_format($ov['questions']) ?></div><div class="l">题库题数</div></div>
     <div class="card"><div class="n"><?= number_format($ov['fb_today']) ?></div><div class="l">今日反馈</div></div>
-    <div class="card"><div class="n"><?= number_format($ov['ad_clicks']) ?></div><div class="l">今日广告点击</div></div>
-    <div class="card"><div class="n"><?= number_format($ov['ad_clicks_7']) ?></div><div class="l">近 7 天广告点击</div></div>
-    <div class="card<?= $G['qreq'] > 0 ? ' seal' : '' ?>"><div class="n"><?= number_format($G['qreq']) ?></div><div class="l">待审提额</div></div>
   </div>
 
   <div class="sec"><h2>用量最高的用户</h2><span class="meta">按已用次数排序</span></div>
   <div class="tw"><table>
     <tr><th>手机号</th><th>已用</th><th>额度</th><th>使用率</th><th>最后登录</th></tr>
     <?php foreach ($topUsers as $u):
-      $pct = $u['searches_limit'] > 0 ? round($u['searches_used'] / $u['searches_limit'] * 100) : 0; ?>
+      $over = $u['searches_used'] >= $u['searches_limit'];
+      $pct  = $u['searches_limit'] > 0
+            ? min(100, round($u['searches_used'] / $u['searches_limit'] * 100)) : 0; ?>
       <tr>
         <td class="mono"><?= $esc($u['phone']) ?></td>
         <td class="num"><?= (int) $u['searches_used'] ?></td>
         <td class="num"><?= (int) $u['searches_limit'] ?></td>
-        <td class="num"><?= $pct ?>%</td>
+        <td class="num"><?= $pct ?>%<?= $over ? '<span style="color:var(--seal)"> 满</span>' : '' ?></td>
         <td class="num"><?= $esc($u['last_login'] ?? '—') ?></td>
       </tr>
     <?php endforeach; ?>

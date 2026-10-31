@@ -185,6 +185,21 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
   </div>
 </footer>
 
+
+<div class="modal" id="policyModal" hidden>
+  <div class="modal-mask"></div>
+  <div class="modal-card policy-card" role="dialog" aria-modal="true" aria-labelledby="policyTitle">
+    <h2 id="policyTitle">使用须知</h2>
+    <p class="modal-sub">请阅读后继续使用</p>
+    <div class="policy-body">
+      <p>本站收录的题库与答案，<strong>仅供平时复习参考</strong>。</p>
+      <p>请不要在正式考试中使用，以免影响你的成绩与学业诚信。</p>
+      <p>祝愿同学们理论考试顺利。</p>
+    </div>
+    <button class="go solid full" id="policyOk" type="button">我已阅读并同意</button>
+  </div>
+</div>
+
 <div class="modal" id="loginModal" hidden>
   <div class="modal-mask" data-close="1"></div>
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
@@ -227,6 +242,25 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="<?= asset('app.js') ?>"></script>
 <script src="<?= asset('feedback.js') ?>"></script>
+<script>
+(function () {
+  var KEY = 'cgtk-policy-v1';
+  var modal = document.getElementById('policyModal');
+  var btn = document.getElementById('policyOk');
+  if (!modal || !btn) return;
+  var ok = false;
+  try { ok = localStorage.getItem(KEY) === '1'; } catch (e) {}
+  if (ok) return;
+  modal.hidden = false;
+  document.body.style.overflow = 'hidden';
+  btn.addEventListener('click', function () {
+    try { localStorage.setItem(KEY, '1'); } catch (e) {}
+    modal.hidden = true;
+    document.body.style.overflow = '';
+  });
+})();
+</script>
+
 <script>
 (function () {
   var fab = document.getElementById('fbFab');

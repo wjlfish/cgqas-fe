@@ -390,14 +390,14 @@
     const subj = item.subjects ? `<span class="sep">·</span><span>${esc(item.subjects)}</span>` : '';
     return `
       <li class="q" data-id="${item.id}">
-        <div class="q-index">${pad(i + 1)}</div>
-        <div>
-          <div class="q-meta"><span class="tag">${esc(item.type)}</span>${subj}${legacy}</div>
+        <div class="q-ans">
+          <span class="lab">答案</span>
+          <span class="v${isJudge(item.type) ? ' is-judge' : ''}">${esc(item.answer)}</span>
+        </div>
+        <div class="q-body">
+          <div class="q-meta"><span class="q-index">${pad(i + 1)}</span><span class="tag">${esc(item.type)}</span>${subj}${legacy}</div>
           <p class="q-stem">${highlight(item.stem, kw)}</p>
           ${opts}
-        </div>
-        <div class="q-ans">
-          <span class="lab">答案</span><span class="v${isJudge(item.type) ? ' is-judge' : ''}">${esc(item.answer)}</span>
         </div>
       </li>`;
   }

@@ -176,14 +176,15 @@ input,select{ font:inherit; color:inherit }
 
 /* 结果行 */
 .results{ list-style:none; margin:0; padding:0 }
-.q{ display:grid; grid-template-columns:30px 1fr 74px; gap:10px;
+.q{ display:grid; grid-template-columns:78px 1fr; gap:14px;
   padding:11px 6px 11px 0; border-bottom:1px solid var(--rule-soft);
   transition:background-color .18s var(--ease); animation:qIn .34s var(--ease-out) both }
 @keyframes qIn{ from{ opacity:0; transform:translateY(5px) } to{ opacity:1; transform:none } }
 .q:hover{ background:var(--seal-wash) }
 .q-index{ font-size:11.5px; color:var(--ink-3); font-variant-numeric:tabular-nums;
-  padding-top:4px; letter-spacing:.04em }
+  letter-spacing:.04em }
 .q:hover .q-index{ color:var(--seal) }
+.q-body{ min-width:0 }
 .q-meta{ display:flex; align-items:center; gap:7px; flex-wrap:wrap;
   font-size:11px; color:var(--ink-3); margin-bottom:5px; letter-spacing:.06em }
 .q-meta .tag{ color:var(--seal); font-weight:600 }
@@ -198,9 +199,15 @@ input,select{ font:inherit; color:inherit }
   gap:4px 18px; font-size:12.5px; color:var(--ink-2) }
 .q-opts li{ display:flex; gap:5px; max-width:100% }
 .q-opts .k{ color:var(--ink-3); font-size:11px; padding-top:1px }
-.q-ans{ text-align:right; white-space:nowrap; padding-top:2px }
-.q-ans .lab{ font-size:9.5px; letter-spacing:.14em; color:var(--ink-3); margin-right:6px }
-.q-ans .v{ font-size:14px; font-weight:700; color:var(--seal); letter-spacing:.06em;
+.q-ans{
+  align-self:start; display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding:7px 4px 6px; border:1px solid var(--seal); background:var(--seal-wash);
+  min-height:46px; justify-content:center;
+}
+.q-ans .lab{ font-size:9px; letter-spacing:.18em; color:var(--seal); opacity:.75 }
+
+.q-ans .v{ font-size:15px; font-weight:700; color:var(--seal); letter-spacing:.06em; text-align:center;
+  line-height:1.35; word-break:break-all;
   font-family:"Songti SC","Source Han Serif SC",STSong,SimSun,serif }
 .q-ans .v.is-judge{ font-size:13px; letter-spacing:.08em }
 
@@ -254,6 +261,13 @@ input,select{ font:inherit; color:inherit }
   font-size:18px; line-height:1; color:var(--ink-3);
 }
 .modal-close:hover{ color:var(--ink) }
+.policy-card{ max-width:460px }
+.policy-body{ margin:0 0 22px; font-size:13px; line-height:1.85; color:var(--ink-2);
+  border-top:1px solid var(--rule-soft); border-bottom:1px solid var(--rule-soft);
+  padding:16px 0 }
+.policy-body p{ margin:0 0 10px }
+.policy-body p:last-child{ margin-bottom:0 }
+.policy-body strong{ color:var(--ink); font-weight:600 }
 .modal-card h2{
   margin:0 0 6px; font-family:"Songti SC","Source Han Serif SC",STSong,SimSun,serif;
   font-size:19px; font-weight:600;
@@ -368,7 +382,7 @@ input,select{ font:inherit; color:inherit }
   .sel{ flex:1 1 0; min-width:0 }
   .sel select{ max-width:none; width:100% }
   .reset-btn{ padding:6px 4px }
-  .q{ grid-template-columns:26px 1fr 64px; gap:8px }
+  .q{ grid-template-columns:68px 1fr; gap:10px }
   .q-stem{ font-size:14.5px }
   .q-opts{ font-size:12px; gap:3px 12px }
   .stat-grid{ grid-template-columns:1fr 1fr }
@@ -376,8 +390,10 @@ input,select{ font:inherit; color:inherit }
 @media (max-width:520px){
   .brand em{ display:none }
   .view-actions .view-title{ flex:1 1 100%; margin-bottom:4px }
-  .q{ grid-template-columns:22px 1fr 58px }
+  .q{ grid-template-columns:58px 1fr; gap:8px }
+  .q-ans{ padding:6px 2px 5px; min-height:40px }
   .q-ans .v{ font-size:13px }
+  .q-ans .lab{ font-size:8px; letter-spacing:.12em }
 }
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{ animation-duration:.001ms !important; transition-duration:.001ms !important }
