@@ -457,6 +457,21 @@ $BASE = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/'), '/');
 
 所有站内链接与 `fetch` 都用 `$BASE` 拼接，所以页面挪到任何目录都不需要改代码。
 
+## 移动端适配
+
+页面禁止自动缩放与拖动，否则唤起键盘时会放大页面、验证码滑块无法准确拖动：
+
+| 手段 | 作用 |
+|---|---|
+| `viewport` 加 `maximum-scale=1, user-scalable=no` | 禁双击/双指缩放 |
+| 移动端输入控件 `font-size:16px` | iOS 对 <16px 的输入框会强制放大，这是主因 |
+| `touch-action:manipulation` | 去掉双击缩放与点击延迟 |
+| `overscroll-behavior-y:none` | 禁下拉刷新与橡皮筋回弹 |
+| `overflow-x:hidden` | 禁横向拖动 |
+| 弹窗打开时 `body.is-locked` | 锁背景滚动，避免拖动时底层页面跟着动 |
+
+弹窗在移动端让**整个遮罩滚动**（而不是卡片内部滚动），防止裁掉阿里云验证码弹层。
+
 ## 层级（z-index）
 
 统一收敛成一组变量，避免通知被遮罩盖住：

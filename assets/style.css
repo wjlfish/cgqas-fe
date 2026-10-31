@@ -30,7 +30,15 @@
 
 *,*::before,*::after{ box-sizing:border-box }
 [hidden]{ display:none !important }
-html{ -webkit-text-size-adjust:100%; height:100% }
+html{ -webkit-text-size-adjust:100%; height:100%; overscroll-behavior-y:none }
+body{ overscroll-behavior-y:none }
+/* 触摸交互: 去掉双击缩放与点击延迟 */
+button,a,input,select,textarea,.q,.nav-link,.promo-card,.promo-cta{ touch-action:manipulation }
+/* 禁止横向拖动/回弹 */
+html,body{ overflow-x:hidden }
+/* 弹窗打开时锁定背景滚动 */
+body.is-locked{ overflow:hidden; touch-action:none }
+body.is-locked .modal-card{ touch-action:auto }
 body{
   margin:0; background:var(--paper); color:var(--ink);
   font:400 14px/1.62 "Inter","Helvetica Neue",-apple-system,BlinkMacSystemFont,
@@ -373,6 +381,21 @@ input,select{ font:inherit; color:inherit }
 .btn.primary:hover{ background:var(--seal); border-color:var(--seal) }
 .btn.ghost{ border-color:var(--rule); color:var(--ink-2) }
 .btn.ghost:hover{ border-color:var(--ink); color:var(--ink); background:none }
+
+/* 移动端: 输入控件统一 16px, 否则 iOS 聚焦时会自动放大页面 */
+@media (max-width:820px){
+  input,select,textarea{ font-size:16px !important }
+  .search input{ font-size:16px !important }
+  .sel select{ font-size:16px !important }
+  .modal-field input{ font-size:16px !important }
+  .fb-search input,.fb-form textarea,.fb-bug textarea,.fb-bug input,.fb-cm-form textarea,.fb-qform textarea{
+    font-size:16px !important;
+  }
+  /* 键盘弹出时让整个遮罩滚动, 卡片本身不裁切(避免切掉验证码弹层) */
+  .modal{ align-items:flex-start; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    padding:16px 0; place-items:start center }
+  .modal-card{ max-height:none; overflow:visible; margin:auto 0 }
+}
 
 /* 响应式 */
 @media (max-width:820px){

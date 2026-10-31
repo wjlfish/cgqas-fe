@@ -24,7 +24,7 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <html lang="zh-CN" data-theme="paper">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="csrf-token" content="<?= $esc($t['token']) ?>">
 <meta name="theme-color" content="#F5F3ED">
 <title>反馈与额度 · 创高题库</title>

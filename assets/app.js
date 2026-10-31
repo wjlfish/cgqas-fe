@@ -247,11 +247,16 @@
   function openLogin(retry) {
     afterLogin = retry || afterLogin;
     $('#loginModal').hidden = false;
+    document.body.classList.add('is-locked');   // 锁定背景滚动, 避免拖动页面
     initCaptcha2();          // 兜底: 若启动时未初始化成功, 这里再试一次
-    $('#loginPhone').focus();
+    // 移动端延迟聚焦, 等弹窗布局稳定, 避免键盘把弹窗顶飞
+    setTimeout(() => { try { $('#loginPhone').focus({ preventScroll: true }); } catch (e) {} }, 60);
   }
 
-  function closeLogin() { $('#loginModal').hidden = true; }
+  function closeLogin() {
+    $('#loginModal').hidden = true;
+    document.body.classList.remove('is-locked');
+  }
 
   /** 首屏空闲态: 不发起检索, 避免无谓消耗额度 */
   function showIdle() {

@@ -49,7 +49,7 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <html lang="zh-CN" data-theme="paper">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="csrf-token" content="<?= $esc($t['token']) ?>">
 <meta name="theme-color" content="#F5F3ED">
 <title>题库检索 · 创高体育理论考试</title>
@@ -252,11 +252,11 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
   try { ok = localStorage.getItem(KEY) === '1'; } catch (e) {}
   if (ok) return;
   modal.hidden = false;
-  document.body.style.overflow = 'hidden';
+  document.body.classList.add('is-locked');
   btn.addEventListener('click', function () {
     try { localStorage.setItem(KEY, '1'); } catch (e) {}
     modal.hidden = true;
-    document.body.style.overflow = '';
+    document.body.classList.remove('is-locked');
   });
 })();
 </script>
