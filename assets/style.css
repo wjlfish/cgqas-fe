@@ -16,6 +16,9 @@
   --line:var(--rule); --fg:var(--ink); --fg2:var(--ink-2); --fg3:var(--ink-3);
   --accent:var(--seal); --accent2:var(--seal); --bad:var(--seal);
   --r:0px; --shadow:none;
+  /* 层级: 通知类必须高于所有遮罩 */
+  --z-toolbar:55; --z-topbar:60; --z-fab:260; --z-pop:261; --z-modal:300;
+  --z-grain:800; --z-toast:900;
 }
 [data-theme="ink"]{
   --paper:#13110D; --paper-2:#1B1813;
@@ -39,7 +42,7 @@ body{
 .topbar,.toolbar{ flex:0 0 auto }
 main.view.is-active, main.fb-page{ flex:1 0 auto }
 body::before{
-  content:""; position:fixed; inset:0; z-index:9999; pointer-events:none;
+  content:""; position:fixed; inset:0; z-index:var(--z-grain); pointer-events:none;
   opacity:var(--grain);
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   mix-blend-mode:multiply;
@@ -56,7 +59,7 @@ input,select{ font:inherit; color:inherit }
   background:var(--seal); z-index:120; transition:width .1s linear }
 
 /* 顶栏 */
-.topbar{ position:sticky; top:0; z-index:60; height:var(--topbar-h);
+.topbar{ position:sticky; top:0; z-index:var(--z-topbar); height:var(--topbar-h);
   background:var(--paper); border-bottom:1px solid var(--rule-soft) }
 .topbar-in{ display:flex; align-items:center; gap:20px; height:100% }
 .brand{ display:flex; align-items:baseline; gap:7px; font-weight:600; font-size:14.5px;
@@ -81,7 +84,7 @@ input,select{ font:inherit; color:inherit }
 [data-theme="ink"] .theme-btn .ic-moon{ display:block }
 
 /* 工具栏 */
-.toolbar{ position:sticky; top:var(--topbar-h); z-index:55;
+.toolbar{ position:sticky; top:var(--topbar-h); z-index:var(--z-toolbar);
   background:var(--paper); border-bottom:1px solid var(--rule) }
 .toolbar-in{ display:flex; align-items:center; gap:10px; flex-wrap:wrap;
   min-height:var(--toolbar-h); padding-block:8px }
@@ -247,7 +250,7 @@ input,select{ font:inherit; color:inherit }
 .logout-btn:hover{ color:var(--seal); border-bottom-color:var(--seal) }
 
 /* 登录弹窗 */
-.modal{ position:fixed; inset:0; z-index:300; display:grid; place-items:center }
+.modal{ position:fixed; inset:0; z-index:var(--z-modal); display:grid; place-items:center }
 .modal-mask{ position:absolute; inset:0; background:rgba(23,21,15,.42); backdrop-filter:blur(2px) }
 .modal-card{
   position:relative; width:min(360px,calc(100% - 32px));
@@ -354,7 +357,7 @@ input,select{ font:inherit; color:inherit }
 /* 提示 */
 .toast{ position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(6px);
   background:var(--ink); color:var(--paper); font-size:12.5px; padding:9px 18px;
-  opacity:0; pointer-events:none; z-index:200;
+  opacity:0; pointer-events:none; z-index:var(--z-toast);
   transition:opacity .24s var(--ease), transform .24s var(--ease) }
 .toast.is-on{ opacity:1; transform:translateX(-50%) translateY(0) }
 
@@ -401,7 +404,7 @@ input,select{ font:inherit; color:inherit }
 
 /* ══════════ 问题反馈 ══════════ */
 .fb-fab{
-  position:fixed; right:clamp(14px,2.6vw,26px); bottom:clamp(14px,2.6vw,26px); z-index:260;
+  position:fixed; right:clamp(14px,2.6vw,26px); bottom:clamp(14px,2.6vw,26px); z-index:var(--z-fab);
   display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 15px;
   border:1px solid var(--rule); background:var(--paper); color:var(--ink-2);
   font-size:12.5px; letter-spacing:.08em; box-shadow:0 1px 0 rgba(23,21,15,.04);
@@ -413,7 +416,7 @@ input,select{ font:inherit; color:inherit }
 
 .fb-pop{
   position:fixed; right:clamp(14px,2.6vw,26px); bottom:calc(clamp(14px,2.6vw,26px) + 50px);
-  z-index:261; width:min(400px, calc(100vw - 28px)); max-height:min(72vh, 620px);
+  z-index:var(--z-pop); width:min(400px, calc(100vw - 28px)); max-height:min(72vh, 620px);
   display:flex; flex-direction:column; background:var(--paper);
   border:1px solid var(--ink); box-shadow:0 18px 50px -18px rgba(23,21,15,.3);
   opacity:0; transform:translateY(6px); transition:opacity .18s var(--ease), transform .18s var(--ease);
