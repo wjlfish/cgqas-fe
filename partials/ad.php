@@ -9,7 +9,7 @@ if (!defined('CG_SITE')) {
 $ADS = [
     [
         'to'   => 'skyrouter',
-        'main' => 'Skyrouter · GPT/Claude 不降智、价格低',
+        'main' => 'Skyrouter · GPT/Claude 价格低、不降智、国内直连',
         'sub'  => '注册免费送3元，联系客服免费远程接入',
     ],
     [
