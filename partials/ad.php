@@ -9,8 +9,8 @@ if (!defined('CG_SITE')) {
 $ADS = [
     [
         'to'   => 'skyrouter',
-        'main' => '注册免费送3元，联系客服免费远程接入',
-        'sub'  => 'skyrouter · 同样的模型花更少的钱 · 国内直连 · 一个 Key 通用主流模型',
+        'main' => 'Skyrouter · GPT/Claude 不降智、价格低',
+        'sub'  => '注册免费送3元，联系客服免费远程接入',
     ],
     [
         'to'   => 'qiyun',
