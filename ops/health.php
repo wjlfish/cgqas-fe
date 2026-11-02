@@ -15,6 +15,9 @@ declare(strict_types=1);
  * 结果写入 settings 表 (health_last_*), 后台概览页读取展示。
  */
 
+// 健康检查用 CLI 跑, CLI 的默认时区可能与站点不同; 统一成站点时间
+date_default_timezone_set('Asia/Shanghai');
+
 $ROOT  = '/var/www/cgtk';
 $OPS   = __DIR__;
 $SITE  = 'https://cgtk.org';

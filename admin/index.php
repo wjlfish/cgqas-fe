@@ -97,6 +97,7 @@ $G = [
 /** 分页条 */
 function nav(string $tab, int $cur, int $pages, array $extra = []): string
 {
+    global $BASE;   // 后台随机路径前缀在全局作用域, 函数内需显式取
     if ($pages <= 1) {
         return '';
     }
