@@ -48,7 +48,7 @@ function geo_client_ip(): string
 function geo_log(string $msg): void
 {
     $g = geo_cfg();
-    $file = (string) ($g['log'] ?? '/www/wwwlogs/cgtk-geo-block.log');
+    $file = (string) ($g['log'] ?? '/var/log/cgtk/geo-block.log');
     @file_put_contents(
         $file,
         date('c') . "\t" . $msg . "\t" . ($_SERVER['REQUEST_URI'] ?? '-') . "\n",
@@ -84,8 +84,8 @@ function geo_region(string $ip): ?string
     if ($searcher === null) {
         $tried = true;
         $g = geo_cfg();
-        $vendor = (string) ($g['vendor'] ?? '/www/wwwroot/cgtk-ops/vendor/Searcher.class.php');
-        $xdb    = (string) ($g['xdb'] ?? '/www/wwwroot/cgtk-ops/data/ip2region_v4.xdb');
+        $vendor = (string) ($g['vendor'] ?? '/opt/cgtk-ops/vendor/Searcher.class.php');
+        $xdb    = (string) ($g['xdb'] ?? '/opt/cgtk-ops/data/ip2region_v4.xdb');
         if (!@is_readable($vendor) || !@is_readable($xdb)) {
             geo_log('GEO_DB_MISSING vendor=' . (int) @is_readable($vendor) . ' xdb=' . (int) @is_readable($xdb));
             return null;

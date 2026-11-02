@@ -156,7 +156,7 @@ function api_log_error(string $action, string $msg): void
           . ($_SERVER['REMOTE_ADDR'] ?? '-') . "	"
           . mb_substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 80) . "\n";
     $c = @require __DIR__ . '/lib/config.php';
-    $dir = (string) ($c['log']['dir'] ?? '/www/wwwlogs');
+    $dir = (string) ($c['log']['dir'] ?? '/var/log/cgtk');
     @file_put_contents(rtrim($dir, '/') . '/cgtk-api-error.log', $line, FILE_APPEND | LOCK_EX);
 }
 

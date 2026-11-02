@@ -30,8 +30,8 @@
 
 ## 链接
 
-- [首页](https://cgtk.wjlo.cc/)：题库检索
-- [反馈与额度](https://cgtk.wjlo.cc/feedback.php)：错题申报、问题反馈、申请提额
+- [首页](https://cgtk.org/)：题库检索
+- [反馈与额度](https://cgtk.org/feedback)：错题申报、问题反馈、申请提额
 
 ## 说明
 

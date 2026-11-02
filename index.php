@@ -59,12 +59,12 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <meta name="description" content="创高体育理论考试题库在线检索。凡使用创高体育理论考试系统的高校均可使用，按关键词、科目、题型查找题目与标准答案，免费。">
 <meta name="keywords" content="创高体育,创高体育理论考试,体育理论考试题库,创高题库,大学体育理论考试,体育理论答案">
 <meta name="robots" content="index, follow, max-image-preview:large">
-<link rel="canonical" href="https://cgtk.wjlo.cc/">
+<link rel="canonical" href="https://cgtk.org/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="创高题库">
 <meta property="og:title" content="创高体育理论考试题库检索">
 <meta property="og:description" content="创高体育理论考试题目在线检索，按关键词、科目、题型查找，附标准答案。">
-<meta property="og:url" content="https://cgtk.wjlo.cc/">
+<meta property="og:url" content="https://cgtk.org/">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="创高体育理论考试题库检索">
 <meta name="twitter:description" content="创高体育理论考试题目在线检索，按关键词、科目、题型查找，附标准答案。">

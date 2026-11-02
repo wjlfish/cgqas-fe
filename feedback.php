@@ -33,7 +33,7 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <title>问题反馈与额度申请 · 创高题库</title>
 <meta name="description" content="创高题库的错题申报、问题反馈与额度申请入口。">
 <meta name="robots" content="noindex, follow">
-<link rel="canonical" href="https://cgtk.wjlo.cc/feedback.php">
+<link rel="canonical" href="https://cgtk.org/feedback">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23F5F3ED'/><text x='16' y='23' font-size='18' text-anchor='middle' fill='%23B03A2E' font-family='serif'>题</text></svg>">
 <link rel="stylesheet" href="<?= asset('style.css') ?>">
 <script>

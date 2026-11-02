@@ -38,4 +38,4 @@ Allow: /llms.txt
 User-agent: Google-Extended
 Allow: /
 
-Sitemap: https://cgtk.wjlo.cc/sitemap.xml
+Sitemap: https://cgtk.org/sitemap.xml

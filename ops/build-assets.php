@@ -2,7 +2,7 @@
 declare(strict_types=1);
 /**
  * 为静态资源生成内容哈希文件名并写 manifest.json
- * 用法: /www/server/php/81/bin/php ops/build-assets.php
+ * 用法: /usr/bin/php8.5 ops/build-assets.php
  */
 $root = dirname(__DIR__);
 $assets = $root . '/assets';

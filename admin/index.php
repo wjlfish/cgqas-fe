@@ -101,7 +101,7 @@ function nav(string $tab, int $cur, int $pages, array $extra = []): string
         return '';
     }
     $qs = $extra;
-    $mk = static function (int $i, string $label, bool $on = false) use ($tab, $qs): string {
+    $mk = static function (int $i, string $label, bool $on = false) use ($tab, $qs, $BASE): string {
         $qs['tab']  = $tab;
         $qs['page'] = $i;
         $href = $BASE . '/?' . http_build_query($qs);

@@ -1,13 +1,14 @@
 # 运维脚本
 
-这些文件**不放在 web 根目录**，部署到 `/www/wwwroot/cgtk-ops/`（docroot 之外，外部访问不到）。
+这些文件**不放在 web 根目录**，部署到 `/opt/cgtk-ops/`（docroot 之外，外部访问不到），
+与 IP 库放在同一目录，属主 `www-data`。
 
 ## health.php —— 健康检查
 
 由 cron 每 5 分钟执行一次：
 
 ```cron
-*/5 * * * * /www/server/php/81/bin/php /www/wwwroot/cgtk-ops/health.php >/dev/null 2>&1
+*/5 * * * * /usr/bin/php8.5 /opt/cgtk-ops/health.php >/dev/null 2>&1
 ```
 
 检查项：
@@ -19,8 +20,8 @@
 | 接口错误率 | 近 30 分钟请求 ≥20 且 5xx 占比 ≥20% |
 | PHP-FPM | socket 缺失或 master 进程为 0 |
 | 磁盘 | 已用 ≥90%（≥95% 为严重） |
-| 站点访问 | 首页非 200 或不含关键内容 |
-| 致命错误 | 近 15 分钟 `cgtk-api-error.log` 出现 FATAL |
+| 站点访问 | 首页非 200 或不含关键内容（自检固定解析到 127.0.0.1，避免境外服务器被自己的地域限制拦成提示页） |
+| 接口错误 | 近 15 分钟 `cgtk-api-error.log` 出现任意错误（未捕获异常与致命错误） |
 
 结果写入 `settings` 表（`health_last_at` / `health_last_state` / `health_last_detail`），
 后台「站点管理」顶部会显示一条状态横幅。
@@ -51,18 +52,18 @@
 ],
 ```
 
-`webhook` 留空时只写日志 `/www/wwwlogs/cgtk-alert.log`，不阻断检查。
+`webhook` 留空时只写日志 `/var/log/cgtk/cgtk-alert.log`，不阻断检查。
 
 ## 日志位置
 
 | 文件 | 内容 |
 |---|---|
-| `/www/wwwlogs/cgtk-alert.log` | 所有告警（无论是否配置 webhook） |
-| `/www/wwwlogs/cgtk-api-error.log` | API 未捕获异常与致命错误 |
+| `/var/log/cgtk/cgtk-alert.log` | 所有告警（无论是否配置 webhook） |
+| `/var/log/cgtk/cgtk-api-error.log` | API 未捕获异常与致命错误 |
 
 ## 手动执行
 
 ```bash
-/www/server/php/81/bin/php /www/wwwroot/cgtk-ops/health.php
-tail -f /www/wwwlogs/cgtk-alert.log
+/usr/bin/php8.5 /opt/cgtk-ops/health.php
+tail -f /var/log/cgtk/cgtk-alert.log
 ```

@@ -17,7 +17,7 @@ return [
     'admin_key' => 'CHANGE_ME_ADMIN_PASSWORD',
 
     'page_size'       => 5,        // 每页条数
-    'page_max'        => 50,       // 最大页码, 防止全量枚举
+    'page_max'        => 40,       // 最大页码, 防止全量枚举
     'query_max_len'   => 40,       // 关键词长度上限
 
     // ── 限流阈值(按 IP) ──
@@ -112,7 +112,7 @@ return [
     // ── 告警 (ops/health.php 由 cron 每 5 分钟调用) ──
     'alert' => [
         'enable'       => true,
-        'webhook'      => '',      // 机器人地址; 留空则只写 /www/wwwlogs/cgtk-alert.log
+        'webhook'      => '',      // 机器人地址; 留空则只写 /var/log/cgtk/cgtk-alert.log
         'kind'         => 'auto',  // auto|wecom|dingtalk|serverchan|telegram|generic
         'min_interval' => 1800,    // 同类告警最小间隔(秒), 防止刷屏
         'sms_fail_min' => 3,       // 30 分钟内短信失败请求达到该数量才告警
@@ -121,9 +121,9 @@ return [
     // ── 地域限制(仅面向中国大陆, 软 ban) ──
     'geo' => [
         'enable'    => true,
-        'xdb'       => '/www/wwwroot/cgtk-ops/data/ip2region_v4.xdb',
-        'vendor'    => '/www/wwwroot/cgtk-ops/vendor/Searcher.class.php',
-        'log'       => '/www/wwwlogs/cgtk-geo-block.log',
+        'xdb'       => '/opt/cgtk-ops/data/ip2region_v4.xdb',
+        'vendor'    => '/opt/cgtk-ops/vendor/Searcher.class.php',
+        'log'       => '/var/log/cgtk/geo-block.log',
         'allow_ips' => [],   // 例外 IP, 管理员 cookie 始终放行
         'test_ip'   => '',   // 仅联调用: 非空时强制按该 IP 判定
         'exempt_admin' => false, // 是否让管理员 cookie 绕过地域限制(公开页面)
@@ -136,6 +136,11 @@ return [
 
     // ── 日志目录 ──
     'log' => [
-        'dir' => '/www/wwwlogs',
+        'dir' => '/var/log/cgtk',
+    ],
+
+    // ── 日志保留 ──
+    'retention' => [
+        'days' => 0,   // 0 = 不自动清理; >0 时按天清理 request_log/search_logs/access_logs
     ],
 ];

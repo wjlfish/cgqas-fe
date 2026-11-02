@@ -15,9 +15,12 @@ declare(strict_types=1);
  * 结果写入 settings 表 (health_last_*), 后台概览页读取展示。
  */
 
-$ROOT  = '/www/wwwroot/cgtk.wjlo.cc';
+$ROOT  = '/var/www/cgtk';
 $OPS   = __DIR__;
-$SITE  = 'https://cgtk.wjlo.cc';
+$SITE  = 'https://cgtk.org';
+// 服务器在境外, 直接访问公网域名会被地域限制拦成提示页; 固定解析到本机,
+// 让自检请求以 127.0.0.1 进入, 与真实用户走同一套 nginx/php 链路。
+$SITE_RESOLVE = ['cgtk.org:443:127.0.0.1'];
 $UA    = 'cgtk-health/1.0 (+internal-monitor)';
 
 require_once $ROOT . '/lib/db.php';
@@ -94,7 +97,7 @@ if ($pdo) {
 }
 
 /* ── 4. PHP-FPM ── */
-$socket = '/tmp/php-cgi-81.sock';
+$socket = '/run/php/php8.5-fpm.sock';
 $fpmOk  = file_exists($socket);
 exec("pgrep -f 'php-fpm: master' 2>/dev/null | wc -l", $o, $rc);
 $masters = (int) trim((string) ($o[0] ?? '0'));
@@ -122,6 +125,7 @@ curl_setopt_array($ch, [
     CURLOPT_CONNECTTIMEOUT => 5,
     CURLOPT_USERAGENT      => $UA,
     CURLOPT_FOLLOWLOCATION => true,
+    CURLOPT_RESOLVE        => $SITE_RESOLVE,
 ]);
 $body = curl_exec($ch);
 $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -133,28 +137,26 @@ if (!$httpOk) {
     $issues[] = ['http_down', 'crit', '站点首页异常：HTTP ' . $code . ($cerr ? ' / ' . $cerr : '')];
 }
 
-/* ── 7. API 错误日志中的致命错误 ── */
-$apiLog = '/www/wwwlogs/cgtk-api-error.log';
-$fatal  = 0;
+/* ── 7. API 错误日志（未捕获异常与致命错误） ── */
+$apiLog = '/var/log/cgtk/cgtk-api-error.log';
+$errors = 0;
 if (is_readable($apiLog)) {
     $fh = fopen($apiLog, 'r');
     if ($fh) {
         $cut = time() - 900; // 15 分钟
         while (($line = fgets($fh)) !== false) {
-            if (strpos($line, 'FATAL') === false) {
-                continue;
-            }
+            // 日志格式: 2026-11-01T09:03:15+00:00 \t [action] \t 错误信息 ...
             $ts = strtotime(substr($line, 0, 25));
             if ($ts !== false && $ts >= $cut) {
-                $fatal++;
+                $errors++;
             }
         }
         fclose($fh);
     }
 }
-add_check($checks, '致命错误', $fatal === 0, $fatal ? "{$fatal} 条/15分钟" : '无');
-if ($fatal > 0) {
-    $issues[] = ['fatal', 'crit', "近 15 分钟出现 {$fatal} 条 PHP 致命错误（见 cgtk-api-error.log）"];
+add_check($checks, '接口错误', $errors === 0, $errors ? "{$errors} 条/15分钟" : '无');
+if ($errors > 0) {
+    $issues[] = ['api_error', 'crit', "近 15 分钟出现 {$errors} 条 API 错误（见 cgtk-api-error.log）"];
 }
 
 /* ── 汇总写库 ── */
