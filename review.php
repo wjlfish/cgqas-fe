@@ -91,10 +91,10 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
   <div class="shell topbar-in">
     <a class="brand" href="/" aria-label="创高题库"><span>创高题库</span></a>
     <nav class="nav" aria-label="主导航">
-      <a class="nav-link" href="/">检索</a>
-      <a class="nav-link" href="/about">关于</a>
-      <a class="nav-link" href="/guide">使用指南</a>
-      <a class="nav-link is-active" href="/review" aria-current="page">复习建议</a>
+      <a class="nav-link nav-link--ext" href="/">检索</a>
+      <a class="nav-link nav-link--ext" href="/guide">指南</a>
+      <a class="nav-link is-active" href="/review" aria-current="page">复习</a>
+      <a class="nav-link nav-link--ext" href="/about">关于</a>
     </nav>
     <button class="theme-btn" id="themeBtn" title="切换主题" aria-label="切换主题">
       <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"

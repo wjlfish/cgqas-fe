@@ -651,3 +651,26 @@ input,select{ font:inherit; color:inherit }
   .fb-pop{ max-height:78vh }
   .fb-ans{ max-width:60px }
 }
+
+/* ══════════ 首页: 低调的站点介绍条 ══════════ */
+.home-intro{ border-top:1px solid var(--rule); margin-top:32px; padding:20px 0 6px }
+.home-intro h2{
+  font-family:"Songti SC","Source Han Serif SC",STSong,SimSun,serif;
+  font-size:14px; font-weight:600; color:var(--ink-2); margin:0 0 7px; letter-spacing:.04em;
+}
+.home-intro p{ margin:0; font-size:12.5px; line-height:1.9; color:var(--ink-3); max-width:780px }
+.home-intro-links{ margin-top:7px !important; display:flex; flex-wrap:wrap; gap:4px 14px }
+.home-intro-links a{ color:var(--ink-2); text-decoration:underline; text-underline-offset:2px }
+.home-intro-links a:hover{ color:var(--seal) }
+@media(max-width:760px){
+  .home-intro{ padding:16px 0 4px; margin-top:22px }
+  .home-intro p{ font-size:12px; line-height:1.8 }
+}
+
+/* 小屏: nav 可横向滚动, 不让新增入口把顶栏撑坏 */
+@media(max-width:520px){
+  .topbar-in{ gap:6px }
+  .nav{ flex:0 1 auto; min-width:0; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch }
+  .nav::-webkit-scrollbar{ display:none }
+  .nav-link{ padding:5px 6px; font-size:12px; white-space:nowrap }
+}
