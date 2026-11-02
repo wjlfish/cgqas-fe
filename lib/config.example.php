@@ -143,4 +143,15 @@ return [
     'retention' => [
         'days' => 0,   // 0 = 不自动清理; >0 时按天清理 request_log/search_logs/access_logs
     ],
+
+    // ── 搜索引擎 / AI 爬虫验证（只放行公开页面） ──
+    // 不单凭 UA: 反向 DNS 正反查 + 官方 IP 段; 验证结果与 IP 段都会落盘缓存
+    'crawler' => [
+        'enable'     => true,
+        'cache_ttl'  => 21600,   // 验证结果缓存(秒)
+        'ranges_ttl' => 86400,   // 官方 IP 段刷新间隔(秒)
+        'range_cache'  => '/var/log/cgtk/crawler-ranges.json',
+        'verify_cache' => '/var/log/cgtk/crawler-verify.json',
+        'log'          => '/var/log/cgtk/crawler.log',
+    ],
 ];

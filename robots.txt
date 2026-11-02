@@ -1,40 +1,172 @@
 User-agent: *
 Allow: /$
-Allow: /feedback
 Allow: /about
-Allow: /go/
+Allow: /guide
+Allow: /review
+Allow: /feedback
 Allow: /assets/
-
-# 接口与跳转不抓取
 Disallow: /api/
-
-# 敏感目录
 Disallow: /lib/
 Disallow: /sql/
 Disallow: /partials/
+Disallow: /go/
 
-# AI 爬虫: 允许抓取公开页(站点说明在 llms.txt)
+# 公开说明（供 AI 爬虫读取站点说明）
+Allow: /llms.txt
+
+# ── 搜索引擎 ──
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+Disallow: /lib/
+Disallow: /sql/
+Disallow: /partials/
+Disallow: /go/
+
+User-agent: bingbot
+Allow: /
+Disallow: /api/
+Disallow: /lib/
+Disallow: /sql/
+Disallow: /partials/
+Disallow: /go/
+
+User-agent: Baiduspider
+Allow: /
+Disallow: /api/
+Disallow: /lib/
+Disallow: /sql/
+Disallow: /partials/
+Disallow: /go/
+
+User-agent: Sogou web spider
+Allow: /
+Disallow: /api/
+Disallow: /lib/
+Disallow: /sql/
+Disallow: /partials/
+Disallow: /go/
+
+User-agent: 360Spider
+Allow: /
+Disallow: /api/
+Disallow: /lib/
+Disallow: /sql/
+Disallow: /partials/
+Disallow: /go/
+
+# 神马 / 夸克 / 通义部分联网来源
+User-agent: YisouSpider
+Allow: /
+Disallow: /api/
+Disallow: /lib/
+Disallow: /sql/
+Disallow: /partials/
+Disallow: /go/
+
+User-agent: Applebot
+Allow: /
+Disallow: /api/
+Disallow: /lib/
+Disallow: /sql/
+Disallow: /partials/
+Disallow: /go/
+
+# ── AI 搜索 / AI 抓取 ──
+# OpenAI: OAI-SearchBot（ChatGPT 搜索）、GPTBot（模型训练）、ChatGPT-User（用户触发）
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /api/
+Disallow: /lib/
+Disallow: /sql/
+Disallow: /partials/
+Disallow: /go/
+
 User-agent: GPTBot
-Allow: /$
-Allow: /feedback
-Allow: /about
-Allow: /go/
-Allow: /llms.txt
+Allow: /
+Disallow: /api/
+Disallow: /lib/
+Disallow: /sql/
+Disallow: /partials/
+Disallow: /go/
 
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /api/
+Disallow: /lib/
+Disallow: /sql/
+Disallow: /partials/
+Disallow: /go/
+
+# Anthropic
 User-agent: ClaudeBot
-Allow: /$
-Allow: /feedback
-Allow: /about
-Allow: /go/
-Allow: /llms.txt
+Allow: /
+Disallow: /api/
+Disallow: /lib/
+Disallow: /sql/
+Disallow: /partials/
+Disallow: /go/
 
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /api/
+Disallow: /lib/
+Disallow: /sql/
+Disallow: /partials/
+Disallow: /go/
+
+User-agent: Claude-User
+Allow: /
+Disallow: /api/
+Disallow: /lib/
+Disallow: /sql/
+Disallow: /partials/
+Disallow: /go/
+
+# Perplexity
 User-agent: PerplexityBot
-Allow: /$
-Allow: /feedback
-Allow: /about
-Allow: /go/
-Allow: /llms.txt
+Allow: /
+Disallow: /api/
+Disallow: /lib/
+Disallow: /sql/
+Disallow: /partials/
+Disallow: /go/
 
+User-agent: Perplexity-User
+Allow: /
+Disallow: /api/
+Disallow: /lib/
+Disallow: /sql/
+Disallow: /partials/
+Disallow: /go/
+
+# 字节系（豆包 / 抖音 / 头条搜索）：官方未公布 IP 验证方式，仅声明允许
+User-agent: Bytespider
+Allow: /
+Disallow: /api/
+Disallow: /lib/
+Disallow: /sql/
+Disallow: /partials/
+Disallow: /go/
+
+# 阿里系（通义 / 千问部分联网来源）：官方未公布 IP 验证方式，仅声明允许
+User-agent: Qwen-User
+Allow: /
+Disallow: /api/
+Disallow: /lib/
+Disallow: /sql/
+Disallow: /partials/
+Disallow: /go/
+
+User-agent: TongyiBot
+Allow: /
+Disallow: /api/
+Disallow: /lib/
+Disallow: /sql/
+Disallow: /partials/
+Disallow: /go/
+
+# Google 的 AI 训练/使用控制开关（不是独立爬虫）
 User-agent: Google-Extended
 Allow: /
 

@@ -6,14 +6,15 @@ require_once __DIR__ . '/lib/ratelimit.php';
 define('CG_SITE', true);
 
 require_once __DIR__ . '/lib/geo.php';
+require_once __DIR__ . '/lib/crawler.php';
 require_once __DIR__ . '/lib/asset.php';
 require_once __DIR__ . '/lib/tcaptcha.php';
 
 // 页面不加缓存, 避免 WebView/浏览器读到旧版(比如还没广告的版本)
 header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
 
-// 境外 IP: 不渲染任何功能, 直接给提示页
-if (geo_blocked()) {
+// 境外 IP: 不渲染任何功能, 直接给提示页; 只放行验证过的搜索引擎/AI 爬虫
+if (geo_blocked() && !crawler_public_bypass()) {
     geo_blocked_page();
 }
 
@@ -86,7 +87,13 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <footer class="foot">
   <div class="shell foot-in">
     <p class="foot-sign">
+      <a href="/">检索</a>
+      <span class="dot">·</span>
       <a href="/about">关于</a>
+      <span class="dot">·</span>
+      <a href="/guide">使用指南</a>
+      <span class="dot">·</span>
+      <a href="/review">复习建议</a>
       <span class="dot">·</span>
       <a href="https://github.com/wjlfish" target="_blank" rel="noopener noreferrer">初音过去<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"></path></svg></a>
     </p>

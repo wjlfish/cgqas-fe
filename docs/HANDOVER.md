@@ -26,6 +26,8 @@
 | 反馈 | 错题申报（需登录）、Bug 反馈（匿名需人机验证）、点赞留言（匿名可用） |
 | 提额 | 用户申请，后台人工审批 |
 | 广告位 | 顶部两块并排，点击经 `/go/<target>` 跳转并记日志 |
+| 公开说明 | 首页介绍+常见问题、`/about`、`/guide` 使用指南、`/review` 复习建议；不登录可读 |
+| 爬虫放行 | 验证过的搜索引擎/AI 爬虫可读公开页面（见下文「爬虫验证」），接口与后台不放行 |
 | 后台 | 随机路径；用户/日志/限流/反馈/提额/去重审阅 |
 | 防滥用 | UA 黑名单、关键词门槛、每 IP 每日预算、翻页枚举检测、IP 封禁 |
 
@@ -34,6 +36,8 @@
 ```
 /               检索页
 /about          关于页
+/guide          题库使用指南（公开）
+/review         创高体育理论考试怎么复习（公开）
 /feedback       反馈与额度
 /api/<action>   接口（如 /api/search?q=xxx）
 /go/<target>    广告跳转
@@ -71,6 +75,23 @@
 - 广告位两块谁在左谁在右，目前靠人工判断，可等点击数据积累后再定
 - 提额审批标准（目前靠人工看理由）
 - 是否要加异常账号检测面板（同 UA 多账号、检索序列高度重合等）
+
+## 爬虫验证
+
+站点对境外 IP 与脚本 UA 有限制，但搜索引擎和 AI 搜索需要能读到公开页面。
+放行**不依据 User-Agent**（UA 可伪造），实现见 `lib/crawler.php`：
+
+- **反向 DNS 正反查**：Googlebot（`*.googlebot.com`）、Bingbot（`*.search.msn.com`）、
+  Baiduspider（`*.baidu.com` / `*.baidu.jp`）、Sogou（`*.sogou.com`）、
+  Bytespider（`*.crawl.bytedance.com`，社区观测约定）、YisouSpider（`*.yisou.com`）、
+  360Spider、Applebot、YandexBot
+- **官方 IP 段**：Google（`common-crawlers.json`）、OpenAI（`searchbot.json` / `gptbot.json` /
+  `chatgpt-user.json`）、Perplexity（`perplexitybot.json` / `perplexity-user.json`）、
+  Anthropic（官方出网段 `160.79.104.0/21`）
+- 官方**没有**公布验证方式的（Qwen-User、TongyiBot 等）不做服务端放行，只在 robots.txt 声明允许
+- 放行范围仅限公开页面白名单（`/`、`/about`、`/guide`、`/review`、`/feedback`、`/assets/`、
+  `/robots.txt`、`/sitemap.xml`、`/llms.txt`），`/api/`、`/go/`、源码目录与后台一律不放行
+- 验证结果与官方 IP 段都有本地缓存；命中会写 `/var/log/cgtk/crawler.log`
 
 ## 开发约定
 

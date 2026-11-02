@@ -6,14 +6,15 @@ require_once __DIR__ . '/lib/ratelimit.php';
 define('CG_SITE', true);
 
 require_once __DIR__ . '/lib/geo.php';
+require_once __DIR__ . '/lib/crawler.php';
 require_once __DIR__ . '/lib/asset.php';
 require_once __DIR__ . '/lib/tcaptcha.php';
 
 // 页面不加缓存, 避免 WebView/浏览器读到旧版(比如还没广告的版本)
 header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
 
-// 境外 IP: 不渲染任何功能, 直接给提示页
-if (geo_blocked()) {
+// 境外 IP: 不渲染任何功能, 直接给提示页; 只放行验证过的搜索引擎/AI 爬虫
+if (geo_blocked() && !crawler_public_bypass()) {
     geo_blocked_page();
 }
 
@@ -56,10 +57,57 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <meta name="csrf-token" content="<?= $esc($t['token']) ?>">
 <meta name="theme-color" content="#F5F3ED">
 <title>创高体育理论考试题库检索 · 题目与答案在线查</title>
-<meta name="description" content="创高体育理论考试题库在线检索。凡使用创高体育理论考试系统的高校均可使用，按关键词、科目、题型查找题目与标准答案，免费。">
+<meta name="description" content="创高体育理论考试题库在线检索。凡使用创高体育理论考试系统的高校均可使用，按关键词、科目、题型查找题目与标准答案，免费；手机号验证码登录后可用，题库仅供平时复习参考。">
 <meta name="keywords" content="创高体育,创高体育理论考试,体育理论考试题库,创高题库,大学体育理论考试,体育理论答案">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="https://cgtk.org/">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://cgtk.org/#website",
+      "name": "创高题库",
+      "alternateName": "创高体育理论考试题库",
+      "url": "https://cgtk.org/",
+      "inLanguage": "zh-CN",
+      "description": "创高体育理论考试题库在线检索工具，按关键词、科目、题型查找题目与标准答案，免费，供平时复习参考。"
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://cgtk.org/#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "创高题库是什么？",
+          "acceptedAnswer": { "@type": "Answer", "text": "创高体育理论考试的题库检索工具。按题干或答案里的关键词检索，可以叠加科目和题型筛选，结果给出题目与标准答案，用于平时复习。" }
+        },
+        {
+          "@type": "Question",
+          "name": "使用创高题库需要登录吗？",
+          "acceptedAnswer": { "@type": "Answer", "text": "查题需要登录：用手机号接收验证码即可，未注册的手机号会自动创建账号。本站的介绍、使用指南和复习建议页面不需要登录。" }
+        },
+        {
+          "@type": "Question",
+          "name": "创高题库收费吗？",
+          "acceptedAnswer": { "@type": "Answer", "text": "免费。每个账号初始有 110 次检索额度，用完可以提交提额申请，由后台人工审批。" }
+        },
+        {
+          "@type": "Question",
+          "name": "题库覆盖哪些科目和题型？",
+          "acceptedAnswer": { "@type": "Answer", "text": "题型包含判断、单选、多选、填空、问答；科目覆盖篮球、排球、足球、乒乓球、羽毛球、网球、武术、健美操、游泳、田径等公共体育课程。各校考试范围以老师说明为准。" }
+        },
+        {
+          "@type": "Question",
+          "name": "发现题目或答案有错误怎么办？",
+          "acceptedAnswer": { "@type": "Answer", "text": "登录后可在「反馈」里提交错题申报；核实并修正后会返还本次检索额度。" }
+        }
+      ]
+    }
+  ]
+}
+</script>
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="创高题库">
 <meta property="og:title" content="创高体育理论考试题库检索">
@@ -180,6 +228,53 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
   </div>
 </main>
 
+<!-- ══ 公开介绍（不登录也能看，供搜索引擎/AI 抓取理解本站） ══ -->
+<section class="about about--page" id="about-site" aria-labelledby="aboutSiteTitle">
+  <div class="shell">
+    <h2 class="about-h2" id="aboutSiteTitle">创高题库是什么</h2>
+    <p class="about-lead">创高题库是面向高校学生的创高体育理论考试题库检索工具。创高体育理论考试是不少高校体育课采用的线上理论考核，本站把常见题目与标准答案整理成可检索的题库，用于平时复习时快速核对概念和表述。凡是使用创高体育理论考试系统的高校学生都可以使用；本站是个人维护的非官方工具，与创高体育官方无关。</p>
+
+    <div class="about-grid">
+      <div>
+        <h2 class="about-h2">能查什么</h2>
+        <p>题型包含判断、单选、多选、填空、问答；科目覆盖篮球、排球、足球、乒乓球、羽毛球、网球、武术、健美操、游泳、田径等公共体育课程。可以按关键词查题干或答案，再叠加科目、题型筛选。</p>
+      </div>
+      <div>
+        <h2 class="about-h2">怎么用</h2>
+        <p>用手机号接收验证码登录（未注册自动建号），首次进入选择自己的体育课科目，检索范围是公共题库加所选科目。输入至少 2 个字的关键词即可检索，每检索一次消耗一次额度，新账号初始 110 次。</p>
+      </div>
+      <div>
+        <h2 class="about-h2">收费吗</h2>
+        <p>免费使用。搜索过程中不会要求付费，遇到收费提示请勿相信。额度用完后可以在反馈页说明用途申请提额，由后台人工审批。</p>
+      </div>
+      <div>
+        <h2 class="about-h2">答案有误怎么办</h2>
+        <p>登录后可以在「反馈」里提交错题申报，指出题目或答案的问题；核实修正后会返还本次检索额度。Bug 反馈与留言无需登录，但需要完成人机验证。</p>
+      </div>
+    </div>
+
+    <h2 class="about-faq-title">常见问题</h2>
+    <dl class="about-faq">
+      <dt>只有某一个学校的学生能用吗？</dt>
+      <dd>不是。创高体育系统在多所高校通用，题库内容基本相同，凡使用该系统的高校学生都可以用。具体考试范围以各自学校老师的要求为准。</dd>
+      <dt>要登录才能查题吗？</dt>
+      <dd>查题需要登录，用手机号验证码即可，未注册会自动建号。本站的介绍、使用指南和复习建议页面不需要登录。</dd>
+      <dt>题目会和考试原题一样吗？</dt>
+      <dd>不保证。题库来自公开资料和同学反馈，适合用来核对概念、熟悉题型，不等于考试原题；答案也可能存在录入错误，遇到疑问以教材和老师讲解为准。</dd>
+      <dt>能在正式考试中使用吗？</dt>
+      <dd>不能。本站定位是平时复习工具，正式考试请独立完成，遵守学校的考试纪律。</dd>
+      <dt>题库会更新吗？</dt>
+      <dd>会。页面底部显示最后更新时间；错题反馈核实后会修正。</dd>
+    </dl>
+
+    <p class="foot-meta" style="margin-top:22px">
+      延伸阅读：<a href="/guide">题库使用指南</a> ·
+      <a href="/review">创高体育理论考试怎么复习</a> ·
+      <a href="/about">关于本站</a>
+    </p>
+  </div>
+</section>
+
 
 
 <footer class="foot">
@@ -189,6 +284,10 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
     </p>
     <p class="foot-sign">
       <a href="/about">关于</a>
+      <span class="dot">·</span>
+      <a href="/guide">使用指南</a>
+      <span class="dot">·</span>
+      <a href="/review">复习建议</a>
       <span class="dot">·</span>
       <a href="/feedback">问题反馈</a>
       <span class="dot">·</span>

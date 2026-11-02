@@ -47,4 +47,6 @@ php ops/build-suggest.php .
 2. 同步代码到服务器
 3. 重建静态资源
 4. 重载 PHP-FPM
-5. 冒烟测试：首页、`/about`、`/api/subjects`、后台登录
+5. 冒烟测试：首页、`/about`、`/guide`、`/review`、`/api/subjects`、后台登录
+
+改了 `ops/nginx.conf`（路由/缓存头）时，额外：先 `sudo nginx -t`，通过后再 `systemctl reload nginx`；配置不一致会直接 404。

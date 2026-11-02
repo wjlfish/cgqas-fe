@@ -28,6 +28,43 @@
 
 恢复时会额外发一条「站点已恢复正常」（此前处于告警态才发）。
 
+## 爬虫验证（搜索引擎 / AI 搜索）
+
+公开页面允许验证过的爬虫读取（`/`、`/about`、`/guide`、`/review`、`/feedback`、`/assets/`、
+`/robots.txt`、`/sitemap.xml`、`/llms.txt`），`/api/`、`/go/`、源码目录、后台一律不放行。
+
+- 代码：`lib/crawler.php`
+- 官方 IP 段快照：`lib/crawler-ranges.json`（Google / OpenAI / Perplexity / Anthropic；
+  运行时另存 `/var/log/cgtk/crawler-ranges.json`，每 24 小时自动从官方 JSON 刷新）
+- 验证结果缓存：`/var/log/cgtk/crawler-verify.json`（6 小时）
+- 命中日志：`/var/log/cgtk/crawler.log`
+
+验证方式：
+
+| 类型 | 适用 |
+|---|---|
+| 反向 DNS 正反查 | Googlebot、Bingbot、Baiduspider、Sogou、Bytespider、YisouSpider、360Spider、Applebot、YandexBot |
+| 官方 IP 段 | Google common-crawlers、OpenAI（OAI-SearchBot / GPTBot / ChatGPT-User）、Perplexity、Anthropic |
+
+Qwen-User、TongyiBot 等官方未公布验证方式的爬虫，服务端**不做放行**，只在 robots.txt 声明允许；
+它们从境内 IP 访问时本身就不受地域限制影响。
+
+手动刷新/自查：
+
+```bash
+sudo /usr/bin/php8.5 -r '
+require "/var/www/cgtk/lib/db.php";
+require "/var/www/cgtk/lib/ratelimit.php";
+require "/var/www/cgtk/lib/crawler.php";
+$r = crawler_ranges();
+foreach (["google","openai-searchbot","openai-gptbot","openai-chatgpt-user","perplexitybot"] as $k) {
+    printf("%-20s %d\n", $k, count((array)($r[$k] ?? [])));
+}
+'
+sudo rm -f /var/log/cgtk/crawler-verify.json   # 改了验证逻辑后清缓存
+sudo chown www-data:www-data /var/log/cgtk/crawler-*.{json,log} 2>/dev/null
+```
+
 ## notify.php —— 告警投递
 
 支持四种机器人，按 URL 自动识别：
