@@ -1,0 +1,41 @@
+User-agent: *
+Allow: /$
+Allow: /feedback
+Allow: /about
+Allow: /go/
+Allow: /assets/
+
+# 接口与跳转不抓取
+Disallow: /api/
+
+# 敏感目录
+Disallow: /lib/
+Disallow: /sql/
+Disallow: /partials/
+
+# AI 爬虫: 允许抓取公开页(站点说明在 llms.txt)
+User-agent: GPTBot
+Allow: /$
+Allow: /feedback
+Allow: /about
+Allow: /go/
+Allow: /llms.txt
+
+User-agent: ClaudeBot
+Allow: /$
+Allow: /feedback
+Allow: /about
+Allow: /go/
+Allow: /llms.txt
+
+User-agent: PerplexityBot
+Allow: /$
+Allow: /feedback
+Allow: /about
+Allow: /go/
+Allow: /llms.txt
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://cgtk.wjlo.cc/sitemap.xml

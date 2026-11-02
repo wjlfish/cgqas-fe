@@ -1,0 +1,25 @@
+# 本地配置(含数据库密码与密钥)
+lib/config.php
+
+# 后台随机路径(密钥, 绝不入库)
+.admin_path
+
+# 题库与个人数据
+sql/data.sql
+sql/*.local.sql
+creds.json
+proxies.json
+
+# 静态资源构建产物(由 ops/build-assets.php 生成)
+assets/*.[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f].css
+assets/*.[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f].js
+assets/manifest.json
+
+# 运行产物
+*.log
+.DS_Store
+
+# 旧版 React 构建产物与依赖(已不再使用)
+node_modules/
+/build
+.user.ini
