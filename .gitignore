@@ -23,3 +23,6 @@ assets/manifest.json
 node_modules/
 /build
 .user.ini
+
+# 本地私有目录(服务器连接、口令、密钥)
+.private/
