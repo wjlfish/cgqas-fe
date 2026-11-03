@@ -1,5 +1,5 @@
 {
- "_comment": "官方公布的爬虫 IP 段快照; 运行时由 lib/crawler.php 按 TTL 自动刷新; anthropic 来自 platform.claude.com/docs/en/api/ip-addresses",
+ "_comment": "官方公布的爬虫 IP 段快照; 运行时由 lib/crawler.php 按 TTL 自动刷新; anthropic: 160.79.104.0/21 为官方 API 出网段, 216.73.216.0/22 为 Anthropic 自有(ClaudeBot 抓取用, RDAP 登记 Anthropic PBC)",
  "google": [
   "2001:4860:4801:10::/64",
   "2001:4860:4801:11::/64",
@@ -645,6 +645,7 @@
   "44.208.221.197/32"
  ],
  "anthropic": [
-  "160.79.104.0/21"
+  "160.79.104.0/21",
+  "216.73.216.0/22"
  ]
 }

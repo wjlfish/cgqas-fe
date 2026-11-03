@@ -294,8 +294,9 @@ function crawler_fetch_ranges(): ?array
     if (!$okAny) {
         return null;
     }
-    // Anthropic 只提供文档（无 JSON），用官方出网段常量
-    $data['anthropic'] = ['160.79.104.0/21'];
+    // Anthropic 官方文档只给 API 出网段；ClaudeBot 抓取还用 Anthropic 自有段
+    // 216.73.216.0/22（RDAP 登记主体 Anthropic, PBC，实测 ClaudeBot/1.0 从此段抓取）
+    $data['anthropic'] = ['160.79.104.0/21', '216.73.216.0/22'];
     $data['_comment'] = '官方公布的爬虫 IP 段; 由 lib/crawler.php 自动刷新';
     return $data;
 }

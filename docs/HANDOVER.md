@@ -87,7 +87,8 @@
   360Spider、Applebot、YandexBot
 - **官方 IP 段**：Google（`common-crawlers.json`）、OpenAI（`searchbot.json` / `gptbot.json` /
   `chatgpt-user.json`）、Perplexity（`perplexitybot.json` / `perplexity-user.json`）、
-  Anthropic（官方出网段 `160.79.104.0/21`）
+  Anthropic（API 出网段 `160.79.104.0/21` + ClaudeBot 抓取所用的自有段 `216.73.216.0/22`，
+  后者经 RDAP 确认为 Anthropic, PBC 登记）
 - 官方**没有**公布验证方式的（Qwen-User、TongyiBot 等）不做服务端放行，只在 robots.txt 声明允许
 - 放行范围仅限公开页面白名单（`/`、`/about`、`/guide`、`/review`、`/feedback`、`/assets/`、
   `/robots.txt`、`/sitemap.xml`、`/llms.txt`），`/api/`、`/go/`、源码目录与后台一律不放行

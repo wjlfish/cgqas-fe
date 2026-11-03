@@ -44,7 +44,7 @@
 | 类型 | 适用 |
 |---|---|
 | 反向 DNS 正反查 | Googlebot、Bingbot、Baiduspider、Sogou、Bytespider、YisouSpider、360Spider、Applebot、YandexBot |
-| 官方 IP 段 | Google common-crawlers、OpenAI（OAI-SearchBot / GPTBot / ChatGPT-User）、Perplexity、Anthropic |
+| 官方 IP 段 | Google common-crawlers、OpenAI（OAI-SearchBot / GPTBot / ChatGPT-User）、Perplexity、Anthropic（`160.79.104.0/21` + ClaudeBot 自有段 `216.73.216.0/22`） |
 
 Qwen-User、TongyiBot 等官方未公布验证方式的爬虫，服务端**不做放行**，只在 robots.txt 声明允许；
 它们从境内 IP 访问时本身就不受地域限制影响。
