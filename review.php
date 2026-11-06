@@ -15,7 +15,7 @@ require_once __DIR__ . '/lib/asset.php';
 
 header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
 
-if (geo_blocked() && !crawler_public_bypass()) {
+if (!crawler_public_bypass() && geo_blocked()) {
     geo_blocked_page();
 }
 

@@ -23,8 +23,55 @@ function geo_cfg(): array
     return $c['geo'] ?? [];
 }
 
+/**
+ * 后台可一键开关的地域限制（settings.geo_enable / geo_off_until）
+ * 返回 null 表示沿用 config.geo.enable
+ */
+function geo_runtime_override(): ?bool
+{
+    static $loaded = false;
+    static $value = null;
+    if ($loaded) {
+        return $value;
+    }
+    $loaded = true;
+    try {
+        if (!function_exists('db')) {
+            return $value = null;
+        }
+        $pdo = db();
+        $rows = [];
+        foreach ($pdo->query("SELECT k, v FROM settings WHERE k IN ('geo_enable','geo_off_until')") as $r) {
+            $rows[(string) $r['k']] = (string) $r['v'];
+        }
+        $until = (int) ($rows['geo_off_until'] ?? 0);
+        if ($until > 0 && time() < $until) {
+            return $value = false;   // 临时关闭中
+        }
+        if ($until > 0) {
+            // 临时关闭已到期，清掉标记，回到 geo_enable 的语义
+            $pdo->prepare("INSERT INTO settings (k, v) VALUES ('geo_off_until','0') AS n ON DUPLICATE KEY UPDATE v = n.v")
+                ->execute();
+        }
+        $enable = $rows['geo_enable'] ?? null;
+        if ($enable === '0') {
+            return $value = false;
+        }
+        if ($enable === '1') {
+            return $value = true;
+        }
+    } catch (Throwable $e) {
+        // 读设置失败时沿用配置文件
+    }
+    return $value = null;
+}
+
 function geo_enabled(): bool
 {
+    $rt = geo_runtime_override();
+    if ($rt !== null) {
+        return $rt;
+    }
     $g = geo_cfg();
     return !empty($g['enable']);
 }

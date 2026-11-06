@@ -18,6 +18,37 @@ $key   = (string) ($_POST['pair_key'] ?? '');
 $aid   = (int) ($_POST['a'] ?? 0);
 $bid   = (int) ($_POST['b'] ?? 0);
 $choice = (string) ($_POST['choice'] ?? '');
+// 地域限制开关：只影响 geo，其他防护（UA/限流/登录/接口）不变
+if ($act === 'geo_set') {
+    $mode = (string) ($_POST['mode'] ?? '');
+    $set  = static function (PDO $pdo, string $k, string $v): void {
+        $pdo->prepare("INSERT INTO settings (k, v) VALUES (?, ?) AS n ON DUPLICATE KEY UPDATE v = n.v")
+            ->execute([$k, $v]);
+    };
+    try {
+        if ($mode === 'on' || $mode === 'off') {
+            $set($pdo, 'geo_enable', $mode === 'on' ? '1' : '0');
+            $set($pdo, 'geo_off_until', '0');
+        } elseif ($mode === 'temp') {
+            $hours = max(1, min(168, (int) ($_POST['hours'] ?? 1)));
+            // 基础开关保持开启，仅临时关闭；到期后自动恢复
+            $set($pdo, 'geo_enable', '1');
+            $set($pdo, 'geo_off_until', (string) (time() + $hours * 3600));
+        } else {
+            fail('bad mode', 400);
+        }
+        $en    = (string) $pdo->query("SELECT v FROM settings WHERE k = 'geo_enable'")->fetchColumn();
+        $until = (int) ($pdo->query("SELECT v FROM settings WHERE k = 'geo_off_until'")->fetchColumn() ?: 0);
+        json_out([
+            'ok'        => true,
+            'enabled'   => $until > time() ? false : ($en === '1'),
+            'off_until' => $until > time() ? $until : 0,
+        ]);
+    } catch (Throwable $e) {
+        fail('db error', 500);
+    }
+}
+
 
 // 批量: 删除与 2026 重复的旧库题
 if ($act === 'bulk_legacy') {

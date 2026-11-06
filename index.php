@@ -14,7 +14,7 @@ require_once __DIR__ . '/lib/tcaptcha.php';
 header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
 
 // 境外 IP: 不渲染任何功能, 直接给提示页; 只放行验证过的搜索引擎/AI 爬虫
-if (geo_blocked() && !crawler_public_bypass()) {
+if (!crawler_public_bypass() && geo_blocked()) {
     geo_blocked_page();
 }
 

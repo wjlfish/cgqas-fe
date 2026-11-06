@@ -82,6 +82,23 @@ try {
     }
 } catch (Throwable $e) { /* 忽略 */ }
 
+// 地域限制开关状态（后台可一键开关）
+$geoSet = [];
+try {
+    foreach ($pdo->query("SELECT k, v FROM settings WHERE k IN ('geo_enable','geo_off_until')") as $row) {
+        $geoSet[(string) $row['k']] = (string) $row['v'];
+    }
+} catch (Throwable $e) { /* 忽略 */ }
+$geoLive  = geo_enabled();
+$geoUntil = (int) ($geoSet['geo_off_until'] ?? 0);
+if ($geoUntil <= time()) { $geoUntil = 0; }
+$geoUntilTxt = '';
+if ($geoUntil > 0) {
+    $geoUntilTxt = (new DateTime('@' . $geoUntil))
+        ->setTimezone(new DateTimeZone('Asia/Shanghai'))
+        ->format('Y-m-d H:i');
+}
+
 // 全局计数(各页签都要用到)
 $G = [
     'questions' => (int) $pdo->query("SELECT COUNT(*) FROM questions")->fetchColumn(),
@@ -590,6 +607,17 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
   .pcols{grid-template-columns:1fr;gap:16px}
   .cards{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
 }
+
+.geobox{ margin:12px 0 20px; padding:14px 16px; border:1px solid var(--rule); border-radius:6px }
+.geobox p{ margin:0 0 8px; font-size:13px }
+.geobox .hint{ color:var(--ink-3); font-size:12px; line-height:1.7 }
+.geo-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px }
+.geo-actions button{ height:32px; padding:0 14px; border:1px solid var(--rule); background:none;
+  color:var(--ink-2); border-radius:4px; font-size:12.5px; cursor:pointer }
+.geo-actions button:hover{ border-color:var(--ink); color:var(--ink) }
+.geo-actions button.on{ border-color:var(--seal); color:var(--seal) }
+.geo-actions button:disabled{ opacity:.45; cursor:default }
+.geo-msg{ margin:0 !important; font-size:12px; color:var(--ink-3) }
 </style>
 </head>
 <body>
@@ -636,6 +664,22 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
   </nav>
 
 <?php if ($tab === 'overview'): ?>
+
+  <div class="sec"><h2>访问控制</h2><span class="meta">境外 IP 地域限制</span></div>
+  <div class="geobox">
+    <p>当前状态：<b><?= $geoLive ? '已开启（境外 IP 返回 403）' : '已关闭（境外 IP 可正常访问）' ?></b>
+      <?php if ($geoUntil > 0): ?> · 临时关闭至 <?= $esc($geoUntilTxt) ?><?php endif; ?>
+    </p>
+    <p class="hint">只影响地域限制；UA 黑名单、限流、登录与接口保护不变。关闭后境外普通用户也能访问公开页面。</p>
+    <div class="geo-actions">
+      <button type="button" data-geo="on" class="<?= $geoLive ? 'on' : '' ?>">开启限制</button>
+      <button type="button" data-geo="off" class="<?= $geoLive ? '' : 'on' ?>">关闭限制</button>
+      <button type="button" data-geo="temp" data-hours="1">临时关闭 1 小时</button>
+      <button type="button" data-geo="temp" data-hours="6">6 小时</button>
+      <button type="button" data-geo="temp" data-hours="24">24 小时</button>
+    </div>
+    <p class="geo-msg" id="geoMsg"></p>
+  </div>
 
   <div class="sec"><h2>今日</h2><span class="meta">实时数据</span></div>
   <div class="cards">
@@ -1501,6 +1545,30 @@ td.mono{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
       }
     });
   }
+
+  /* 地域限制开关 */
+  document.querySelectorAll('[data-geo]').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      btn.disabled = true;
+      try {
+        const fd = new FormData();
+        fd.append('action', 'geo_set');
+        fd.append('mode', btn.dataset.geo);
+        if (btn.dataset.geo === 'temp') fd.append('hours', btn.dataset.hours || '1');
+        const r = await fetch('<?= $BASE ?>/api', { method: 'POST', body: fd, credentials: 'same-origin' });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.error || '失败');
+        const msg = document.getElementById('geoMsg');
+        if (msg) msg.textContent = j.enabled ? '已开启地域限制' : '已关闭地域限制';
+        setTimeout(function () { location.reload(); }, 500);
+      } catch (e) {
+        const msg = document.getElementById('geoMsg');
+        if (msg) msg.textContent = e.message;
+        btn.disabled = false;
+      }
+    });
+  });
+
 })();
 </script>
 </body>
