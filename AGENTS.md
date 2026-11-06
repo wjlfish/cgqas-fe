@@ -11,7 +11,8 @@
 ## 目录
 
 ```
-index.php about.php feedback.php   页面
+index.php about.php feedback.php 页面
+index.php guide.php review.php 404.php   公开页面（检索/使用指南/复习建议/404）
 api.php go.php                     接口与跳转
 lib/                               配置、数据库、鉴权、限流、地域、验证码
 partials/ assets/ admin/ ops/ sql/ 模板、静态资源、后台、脚本、建表

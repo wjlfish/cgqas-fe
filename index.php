@@ -81,11 +81,12 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="创高体育理论考试题库检索">
 <meta name="twitter:description" content="创高体育理论考试题目在线检索，按关键词、科目、题型查找，附标准答案。">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23F5F3ED'/><text x='16' y='23' font-size='18' text-anchor='middle' fill='%23B03A2E' font-family='serif'>题</text></svg>">
+<link rel="icon" href="/assets/favicon.ico" sizes="any">
 <link rel="stylesheet" href="<?= asset('style.css') ?>">
 
 
 <?php if ($tcOn): ?>
+<link rel="preconnect" href="https://turing.captcha.qcloud.com" crossorigin>
 <script src="https://turing.captcha.qcloud.com/TJCaptcha.js"></script>
 <script>
   window.__CG_TCAPTCHA = { appId: <?= json_encode((string) $tcCfg['app_id']) ?> };
@@ -198,7 +199,7 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <!-- ══ 公开介绍（不登录也能看；保持低调，不打扰检索） ══ -->
 <section class="home-intro" id="about-site" aria-labelledby="aboutSiteTitle">
   <div class="shell">
-    <h2 id="aboutSiteTitle">创高题库是什么</h2>
+    <h1 class="home-intro-title" id="aboutSiteTitle">创高体育理论考试题库检索</h1>
     <p>创高体育理论考试的题库检索工具：手机号验证码登录后可查题，支持按关键词、科目、题型检索，答案供平时复习参考。本站是个人维护的非官方工具，与创高体育官方无关。</p>
     <p class="home-intro-links">
       <a href="/guide">使用指南</a>
@@ -214,7 +215,7 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <footer class="foot">
   <div class="shell foot-in">
     <p class="foot-meta">
-      <span>最后更新 <b>2026-10-26</b></span>
+      <span>题库更新 <b>2026-10-26</b></span>
     </p>
     <p class="foot-sign">
       <a href="/about">关于</a>

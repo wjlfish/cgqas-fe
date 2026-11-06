@@ -33,7 +33,7 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <meta name="description" content="创高体育理论考试的复习思路：按自己的体育课科目确定范围，按判断、单选、多选、填空、问答分题型过一遍，再用题库检索查漏补缺、整理错题。">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://cgtk.org/review">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23F5F3ED'/><text x='16' y='23' font-size='18' text-anchor='middle' fill='%23B03A2E' font-family='serif'>题</text></svg>">
+<link rel="icon" href="/assets/favicon.ico" sizes="any">
 <link rel="stylesheet" href="<?= asset('style.css') ?>">
 <script type="application/ld+json">
 {
@@ -72,6 +72,14 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
       "about": "高校体育理论考试的复习方法与题库使用建议",
       "inLanguage": "zh-CN",
       "mainEntityOfPage": "https://cgtk.org/review"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://cgtk.org/review#breadcrumb",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "首页", "item": "https://cgtk.org/"},
+        {"@type": "ListItem", "position": 2, "name": "复习建议", "item": "https://cgtk.org/review"}
+      ]
     }
   ]
 }
@@ -112,6 +120,9 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 
 <main class="fb-page">
   <div class="shell">
+    <nav class="crumb" aria-label="面包屑">
+      <a href="/">首页</a><span class="sep">/</span><span aria-current="page">复习建议</span>
+    </nav>
     <div class="view-actions">
       <h1 class="view-title">创高体育理论考试怎么复习</h1>
     </div>
@@ -177,7 +188,7 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 
 <footer class="foot">
   <div class="shell foot-in">
-    <p class="foot-meta"><span>最后更新 <b>2026-11-02</b></span></p>
+    <p class="foot-meta"><span>最后更新 <b>2026-11-06</b></span></p>
     <p class="foot-sign">
       <a href="/">检索</a>
       <span class="dot">·</span>

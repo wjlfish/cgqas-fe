@@ -33,7 +33,7 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 <meta name="description" content="创高题库使用指南：手机号验证码登录、按题干或答案关键词检索、选择自己的体育课科目、查看剩余检索次数、错题申报与提额申请的完整说明。">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://cgtk.org/guide">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23F5F3ED'/><text x='16' y='23' font-size='18' text-anchor='middle' fill='%23B03A2E' font-family='serif'>题</text></svg>">
+<link rel="icon" href="/assets/favicon.ico" sizes="any">
 <link rel="stylesheet" href="<?= asset('style.css') ?>">
 <script type="application/ld+json">
 {
@@ -77,6 +77,14 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
       "about": "创高体育理论考试题库的检索方法与使用规则",
       "inLanguage": "zh-CN",
       "mainEntityOfPage": "https://cgtk.org/guide"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://cgtk.org/guide#breadcrumb",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "首页", "item": "https://cgtk.org/"},
+        {"@type": "ListItem", "position": 2, "name": "使用指南", "item": "https://cgtk.org/guide"}
+      ]
     }
   ]
 }
@@ -117,6 +125,9 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 
 <main class="fb-page">
   <div class="shell">
+    <nav class="crumb" aria-label="面包屑">
+      <a href="/">首页</a><span class="sep">/</span><span aria-current="page">使用指南</span>
+    </nav>
     <div class="view-actions">
       <h1 class="view-title">题库使用指南</h1>
     </div>
@@ -176,7 +187,7 @@ $esc = static fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 
 <footer class="foot">
   <div class="shell foot-in">
-    <p class="foot-meta"><span>最后更新 <b>2026-11-02</b></span></p>
+    <p class="foot-meta"><span>最后更新 <b>2026-11-06</b></span></p>
     <p class="foot-sign">
       <a href="/">检索</a>
       <span class="dot">·</span>

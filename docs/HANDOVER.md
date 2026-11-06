@@ -94,6 +94,17 @@
   `/robots.txt`、`/sitemap.xml`、`/llms.txt`），`/api/`、`/go/`、源码目录与后台一律不放行
 - 验证结果与官方 IP 段都有本地缓存；命中会写 `/var/log/cgtk/crawler.log`
 
+## SEO 要点（2026-11-06）
+
+- 每个可索引页面只有一个 H1；标题/描述唯一，不含关键词堆砌
+- 内页有可见面包屑，并配 `BreadcrumbList` 结构化数据；首页有 `WebSite`
+- `/feedback`、`404` 均 `noindex`，不放进 sitemap；sitemap 只列 `/`、`/guide`、`/review`、`/about`
+- `www`→apex、`http`→`https`、旧 `.php` URL、尾斜杠 URL 统一 301
+- 404 走自定义页面（保留 404 状态码 + `X-Robots-Tag: noindex`），未知路径不会返回软 404
+- favicon 为真实文件（`/favicon.ico` 与 `/assets/favicon.ico`），爬虫可抓取
+- 爬虫看到的内容与用户一致（无 cloaking）：验证过的爬虫只是跳过地域限制，页面本身不变
+- 上线后到 Google Search Console 重新提交 sitemap，并对新页面 `/guide`、`/review` 请求编入索引
+
 ## 开发约定
 
 见 `AGENTS.md`：改接口路径先跑 `ops/check-urls.sh`；改 CSS/JS 必须重建资源；
