@@ -58,7 +58,7 @@
       opts.body = params;
     } else {
       const qs = new URLSearchParams(params || {});
-      if (qs.toString()) url += '&' + qs;
+      if (qs.toString()) url += '?' + qs;
     }
 
     const r = await fetch(url, opts);

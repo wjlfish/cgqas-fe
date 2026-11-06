@@ -33,7 +33,17 @@ else
   echo "  ✓ 全部动作已实现 ($(echo "$ACTIONS" | wc -l | tr -d ' ') 个)"
 fi
 
-echo "== 3) 检查 JS 语法 =="
+echo "== 3) 检查 GET 查询串是否用 ? 拼接 =="
+BADQS=$(grep -rnE "url \+= '&'|url \+= \"&\"" "$ROOT/assets"/*.js 2>/dev/null || true)
+if [ -n "$BADQS" ]; then
+  echo "  ✗ 查询串拼接错误(应为 '?'; 否则 /api/<action>&... 会被 nginx 当未知路径返回 404):"
+  echo "$BADQS" | sed 's/^/    /'
+  fail=1
+else
+  echo "  ✓ GET 查询串拼接正确"
+fi
+
+echo "== 4) 检查 JS 语法 =="
 for f in "$ROOT"/assets/*.js; do
   if command -v node >/dev/null 2>&1; then
     node --check "$f" || { echo "  ✗ 语法错误: $f"; fail=1; }
